@@ -61,19 +61,41 @@ generation to firewall rules automatically.
 
 ## Quick Start
 
-📥 Run the installer via the following one-liner to begin the interactive setup:
+Choose one of the installation options below to begin the interactive setup:
 
+### 🚀 Option 1: Maintained Version (Recommended)
+
+This version is maintained by **alsyundawy** and includes all the features listed in this repository (e.g., dual-stack IPv4/IPv6, extended DNS options, security hardening).
+
+*Using `wget`:*
 ```bash
 wget https://raw.githubusercontent.com/alsyundawy/OpenVPN-Install/refs/heads/master/openvpn-install.sh \
   -O openvpn-install.sh && sudo bash openvpn-install.sh
 ```
 
-Or, using `curl`:
-
+*Using `curl`:*
 ```bash
 curl -O https://raw.githubusercontent.com/alsyundawy/OpenVPN-Install/refs/heads/master/openvpn-install.sh \
   && sudo bash openvpn-install.sh
 ```
+
+### ☕ Option 2: Original Creator's Version (Nyr)
+
+This runs the original script (`openvpn-install-nyr.sh`) by **Nyr**.
+
+*Using `wget`:*
+```bash
+wget https://raw.githubusercontent.com/alsyundawy/OpenVPN-Install/refs/heads/master/openvpn-install-nyr.sh \
+  -O openvpn-install-nyr.sh && sudo bash openvpn-install-nyr.sh
+```
+
+*Using `curl`:*
+```bash
+curl -O https://raw.githubusercontent.com/alsyundawy/OpenVPN-Install/refs/heads/master/openvpn-install-nyr.sh \
+  && sudo bash openvpn-install-nyr.sh
+```
+
+---
 
 📋 The script will guide you through:
 
@@ -180,12 +202,12 @@ maintenance of the installer:
 
 ### Nyr (Original Creator)
 
-- 💳 [Donate via PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=VBAYDL34Z7J6L)
+- [![Donate via PayPal](https://img.shields.io/badge/Donate-PayPal-00457C?style=flat-square&logo=paypal&logoColor=white)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=VBAYDL34Z7J6L)
 - 🪙 [Donate via Cryptocurrency](https://pastebin.com/raw/M2JJpQpC)
 
 ### alsyundawy (Version Maintainer)
 
-- 💳 [Donate via PayPal](https://www.paypal.me/alsyundawy)
+- [![Donate via PayPal](https://img.shields.io/badge/Donate-PayPal-00457C?style=flat-square&logo=paypal&logoColor=white)](https://www.paypal.me/alsyundawy)
 
 ---
 

@@ -186,6 +186,14 @@ maintenance of the installer:
 ### alsyundawy (Version Maintainer)
 
 - 💳 [Donate via PayPal](https://www.paypal.me/alsyundawy)
+- <details>
+  <summary>💖 <b>Dukungan QRIS / Support Me</b> (Klik untuk berdonasi / Click to view QRIS)</summary>
+  <p align="center">
+    Jika Anda merasa terbantu dan ingin mendukung proyek ini, pertimbangkan untuk berdonasi melalui QRIS. Terima kasih atas dukungannya! 🙏
+    <br><br>
+    <img width="350" alt="QRIS Donation" src="https://github.com/user-attachments/assets/a0126f28-6dde-43da-ba14-d7c9a27de0df" />
+  </p>
+</details>
 
 ---
 

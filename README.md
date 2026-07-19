@@ -1,115 +1,144 @@
-# openvpn-install
+# OpenVPN Road Warrior Installer
 
-> **Road warrior** OpenVPN installer for Ubuntu,
-> Debian, AlmaLinux, Rocky Linux, CentOS and Fedora.
+> ⚡ **An automated, production-ready OpenVPN server setup script supporting
+> dual-stack IPv4/IPv6, hardened security defaults, and integrated local Unbound
+> recursive DNS resolver.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Shell](https://img.shields.io/badge/shell-bash-89e051.svg)](https://www.gnu.org/software/bash/)
+[![Release](https://img.shields.io/badge/release-v2.0.1-brightgreen.svg)](https://github.com/alsyundawy/Nyr-openvpn-install/releases)
+[![Platform](https://img.shields.io/badge/platform-Linux-lightgrey.svg)](https://www.kernel.org)
 
-This script sets up a fully functional OpenVPN
-server in under a minute — even if you have never
-used OpenVPN before. It is designed to be minimal,
-reliable, and non-invasive, handling everything from
-PKI generation to firewall rules automatically.
+🚀 This script lets you set up your own secure OpenVPN server in under a minute,
+even if you have never configured a VPN before. It is designed to be minimal,
+non-invasive, and highly secure—handling system-level tasks from PKI
+generation to firewall rules automatically.
 
 ---
 
 ## Table of Contents
 
-- [Requirements](#requirements)
 - [Supported Distributions](#supported-distributions)
+- [Requirements](#requirements)
 - [Quick Start](#quick-start)
-- [Features](#features)
+- [Key Features](#key-features)
+- [Extended DNS Options](#extended-dns-options)
 - [Post-Installation Management](#post-installation-management)
-- [Security Notes](#security-notes)
-- [Support the Project](#support-the-project)
-- [Sponsors](#sponsors)
+- [Security Hardening Defaults](#security-hardening-defaults)
+- [Support & Donation](#support-and-donation)
 - [License](#license)
-
----
-
-## Requirements
-
-- A **root** or **sudo** shell
-- The **TUN device** must be available (`/dev/net/tun`)
-- One of the [supported distributions](#supported-distributions) listed below
-- `wget` or `curl` (auto-installed if missing on Debian/Ubuntu)
 
 ---
 
 ## Supported Distributions
 
-| Distribution    | Minimum Version |
-| --------------- | --------------- |
-| Ubuntu          | 22.04 LTS       |
-| Debian          | 11 (Bullseye)   |
-| AlmaLinux       | 9               |
-| Rocky Linux     | 9               |
-| CentOS          | 9               |
-| Fedora          | Latest stable   |
+| 🐧 Distribution | ⚙️ Minimum Version | 📦 Repository Channel |
+| :--- | :--- | :--- |
+| **Ubuntu** | 22.04 LTS | Official OpenVPN APT |
+| **Debian** | 11 (Bullseye) | Official OpenVPN APT |
+| **AlmaLinux** | 8 | Copr `@OpenVPN/openvpn-release-2.6` |
+| **Rocky Linux** | 8 | Copr `@OpenVPN/openvpn-release-2.6` |
+| **CentOS / Stream** | 8 | Copr `@OpenVPN/openvpn-release-2.6` |
+| **Oracle Linux** | 8 | Copr `@OpenVPN/openvpn-release-2.6` |
+| **Fedora** | Latest Stable | Distribution Native |
+| **openSUSE** | Leap 15 / Tumbleweed | Distribution Native |
+| **Arch Linux** | Rolling | Distribution Native |
 
-> **Note:** Debian Testing and Debian Unstable (Sid) are not supported.
+> [!NOTE]
+> ⚠️ Debian Testing and Debian Unstable (Sid) are currently not supported to
+> maintain installation predictability.
+
+---
+
+## Requirements
+
+- 👤 **Superuser privileges** (`root` or `sudo`)
+- 🌐 An active network interface with a global IPv4/IPv6 address
+- 🔌 **TUN device** enabled on the host (`/dev/net/tun`)
+- ⚡ A systemd-based Linux distribution
 
 ---
 
 ## Quick Start
 
-Run the following one-liner as root and follow the interactive prompts:
+📥 Run the installer via the following one-liner to begin the interactive setup:
 
 ```bash
 wget https://raw.githubusercontent.com/alsyundawy/OpenVPN-Install/refs/heads/master/openvpn-install.sh \
-  -O openvpn-install.sh && bash openvpn-install.sh
+  -O openvpn-install.sh && sudo bash openvpn-install.sh
 ```
 
-Or using `curl`:
+Or, using `curl`:
 
 ```bash
 curl -O https://raw.githubusercontent.com/alsyundawy/OpenVPN-Install/refs/heads/master/openvpn-install.sh \
-  && bash openvpn-install.sh
+  && sudo bash openvpn-install.sh
 ```
 
-The script will guide you through selecting:
+📋 The script will guide you through:
 
-- IPv4 / IPv6 address
-- Protocol (UDP recommended, or TCP)
-- Port (default: `1194`)
-- DNS resolver (system, Google, Cloudflare, OpenDNS,
-  Quad9, Gcore, AdGuard, or custom)
-- First client name
+1. Selecting the primary network interface (IPv4 / IPv6).
+2. Choosing the transport protocol (UDP is highly recommended, or TCP).
+3. Defining the listening port (default: `1194`).
+4. Selecting your preferred DNS resolver.
+5. Providing the initial client name.
 
-Once complete, a ready-to-use `.ovpn` configuration
-file is saved in the same directory as the script.
+💾 Upon completion, the installer saves a client configuration file (`.ovpn`)
+directly to the script directory.
 
 ---
 
-## Features
+## Key Features
 
-- **Zero-dependency setup** — everything installed and configured automatically
-- **Modern cryptography** — EasyRSA 3, SHA-512 auth, TLS-crypt key
-- **Predefined DH parameters** — uses the
-  RFC-standardised `ffdhe2048` group (no generation wait)
-- **IPv4 & IPv6 support** — dual-stack routing out of the box
-- **Flexible DNS options** — 8 built-in resolvers plus custom IP input
-- **Firewall aware** — auto-configures `firewalld` or `iptables` as appropriate
-- **SELinux compatible** — applies port labels via
-  `semanage` when enforcing mode is detected
-- **Container friendly** — disables `LimitNPROC` when running inside a container
-- **NAT traversal** — detects private IPs and prompts
-  for the public endpoint automatically
-- **CRL management** — certificate revocation list
-  generated and updated on every revocation
+- ⚡ **Official Repository Integration**: Configures official OpenVPN repositories
+  dynamically for Debian/Ubuntu and RHEL-based systems to ensure you run the
+  stable 2.6.x branch instead of outdated packages.
+- 🌐 **Full Dual-Stack IPv4/IPv6 Routing**: Automatic subnets mapping and address
+  assignment for dual-stack hosts.
+- 🔒 **Hardened Cryptography**: Uses standard RFC 7919 `ffdhe2048` Diffie-Hellman
+  parameters (safe and instant generation), SHA-512 authentication, and
+  `tls-crypt` payload encryption keys.
+- 🛡️ **Integrated Unbound Resolver**: Provides a one-click local Unbound setup
+  with built-in DNS rebinding protection (RFC1918 + ULA), DNSSEC validation,
+  anti-spoofing (`use-caps-for-id`), and strict caching rules.
+- 🚦 **Idempotent Firewall Handlers**: Safely configures `firewalld` or
+  `iptables`/`nftables` services. Direct rules are audited before
+  insertion/removal to prevent duplicates and routing table pollution.
+- 🏷️ **SELinux-Aware**: Automatically checks SELinux enforcing states and updates
+  context policy labels for custom ports using `semanage`.
+
+---
+
+## Extended DNS Options
+
+🔍 The script offers **36 pre-configured resolvers** alongside system defaults
+and custom inputs:
+
+1. 🏠 **Local Resolver**:
+   - `Local Unbound` (Local caching resolver with DNSSEC)
+2. 🌍 **Global Anycast Resolvers**:
+   - `Google Public DNS` (Standard & IPv6)
+   - `Cloudflare DNS` (Standard, Security-filtered, or Family-filtered)
+   - `Quad9 DNS` (Secure, Unsecured, or ECS-supported)
+   - `OpenDNS` (Home or FamilyShield)
+3. 🗺️ **Region-Specific & Alternative Resolvers**:
+   - `AliDNS`, `DNSPod`, `114DNS`, `Baidu DNS`, `OneDNS`, `DNSPai`
+   - `CleanBrowsing` (Security, Adult, or Family filters)
+   - `Verisign`, `DNS.WATCH`, `Yandex` (Basic, Safe, or Family)
+   - `Level3/Lumen`, `Neustar` (Default, Threat, or Family)
+   - `Oracle Dyn`, `Alternate DNS`, `Comodo Secure DNS`, `Freenom World`
+4. ⚙️ **Custom Input**:
+   - Accepts multiple comma/space-separated IPv4 and IPv6 addresses.
 
 ---
 
 ## Post-Installation Management
 
-Once OpenVPN is installed, re-run the script at any time to manage your setup:
+🔧 Run the script again at any time to access the administrative menu:
 
 ```bash
-bash openvpn-install.sh
+sudo bash openvpn-install.sh
 ```
-
-You will be presented with the following menu:
 
 ```text
 OpenVPN is already installed.
@@ -121,53 +150,48 @@ Select an option:
    4) Exit
 ```
 
-| Option | Description |
-| ------ | ----------- |
-| **Add a new client** | Generates a new `.ovpn` configuration file for a new device |
-| **Revoke an existing client** | Revokes the client certificate and regenerates the CRL |
-| **Remove OpenVPN** | Completely uninstalls OpenVPN, cleans up firewall rules and config |
+| 📋 Menu Option | 🛠️ Action Description |
+| :--- | :--- |
+| **Add a new client** | Configures and signs a new client key pair and generates the `.ovpn` profile. |
+| **Revoke an existing client** | Revokes the client's certificate immediately and updates the CRL file. |
+| **Remove OpenVPN** | Gracefully cleans up all server files, helper services, and restore firewall states. |
 
 ---
 
-## Security Notes
+## Security Hardening Defaults
 
-- All certificates use **3650-day validity** (10 years)
-  with `nopass` for unattended use.
-- The TLS-crypt key (`tc.key`) provides an additional
-  layer of authentication before the TLS handshake.
-- The CRL file is set to be readable by `nobody` so
-  OpenVPN can verify it while running as a non-root user.
-- Client configuration files use
-  `remote-cert-tls server` to prevent MITM attacks.
-
----
-
-## Support the Project
-
-If this script has been useful to you, consider supporting continued development:
-
-[Nyr](https://github.com/Nyr)
-
-- [Donate via PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=VBAYDL34Z7J6L)
-- [Donate via Cryptocurrency](https://pastebin.com/raw/M2JJpQpC)
-
-[alsyundawy](https://github.com/alsyundawy).
-
-- [Donate via PayPal](https://www.paypal.me/alsyundawy)
+- 🛡️ **Strict Permissions**: The installer runs under a restrictive `umask 077`
+  and enforces `chmod 600` on private keys and client profiles.
+- 👥 **Least Privilege**: The OpenVPN server daemon drops privileges to run as the
+  unprivileged user `nobody` and the `nogroup`/`nobody` system group after
+  initialization.
+- 💧 **Anti-Leak Measures**: Pushes `block-outside-dns` policies to client
+  devices to prevent DNS leakages outside the encrypted tunnel.
+- 🔑 **CRL Permissions**: The Certificate Revocation List (`crl.pem`) is owned and
+  accessible specifically to the unprivileged OpenVPN daemon so dynamic
+  revocation checks function without root.
 
 ---
 
-## Sponsors
+## Support and Donation
 
-**[Clever VPN](https://www.clever-vpn.net/en/landing-vpn?wg-referral=01LOULuQoi)**
-— VPN without the terminal. Point-and-click deployment
-with a free VPS, live in 3 minutes.
-Try it free, then $1/month.
+☕ If this project helps secure your network, please support the continued
+maintenance of the installer:
+
+### Nyr (Original Creator)
+
+- 💳 [Donate via PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=VBAYDL34Z7J6L)
+- 🪙 [Donate via Cryptocurrency](https://pastebin.com/raw/M2JJpQpC)
+
+### alsyundawy (Version Maintainer)
+
+- 💳 [Donate via PayPal](https://www.paypal.me/alsyundawy)
 
 ---
 
 ## License
 
-Released under the [MIT License](https://opensource.org/licenses/MIT).
-Copyright © 2013-2026 [Nyr](https://github.com/Nyr).
-Copyright © 2026 [alsyundawy](https://github.com/alsyundawy).
+📄 This project is licensed under the terms of the **MIT License**.
+
+- Copyright (c) 2013-2026 [Nyr](https://github.com/Nyr)
+- Copyright (c) 2026 [alsyundawy](https://github.com/alsyundawy)

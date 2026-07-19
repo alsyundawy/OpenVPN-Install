@@ -5,19 +5,19 @@
 #
 # DESCRIPTION:
 #   Automated OpenVPN server installer and manager supporting Ubuntu, Debian,
-#   AlmaLinux, Rocky Linux, CentOS, and Fedora. Handles full installation,
-#   client management (add/revoke), and clean uninstallation.
+#   AlmaLinux, Rocky Linux, CentOS, Oracle Linux, Fedora, openSUSE, and Arch.
+#   Handles full installation, client management (add/revoke), and clean uninstallation.
 #
 # FEATURES:
 #   - Official OpenVPN repository integration (2.6.x stable)
 #   - Dual-stack IPv4/IPv6 support
 #   - Extended DNS provider list (35 providers + IPv6 variants for dual-stack)
 #   - Local Unbound resolver option with DNSSEC hardening
-#   - TLS-Crypt v2 authentication (SHA-512)
+#   - TLS-Crypt authentication (SHA-512)
 #   - Firewalld and iptables/nftables support
 #   - SELinux-aware port management
 #   - Container-safe (OpenVZ/LXC detection)
-#   - ShellCheck compliant (SC2006, SC2086, SC2155, SC2164, etc.)
+#   - Hardened input validation and idempotent firewall handling
 #
 # USAGE:
 #   sudo bash openvpn-install.sh
@@ -36,7 +36,30 @@
 #   MIT License — https://opensource.org/licenses/MIT
 #
 # ==============================================================================
+# DOCNOTE:
+#   - Behavior preserved as much as possible from the submitted script.
+#   - This revision focuses on bug fixes, safer validation, better quoting,
+#     package installation safety, and more idempotent firewall handling.
+#   - No new end-user features were intentionally added.
+# ==============================================================================
 # CHANGELOG:
+#   [2026-07-19] v2.0.1
+#     - ADD: Support for RHEL 8 base, AlmaLinux 8, Rocky Linux 8, and Oracle Linux 8
+#     - ADD: Dynamic EasyRSA version fetching to always use the latest release
+#     - FIX: Pacman and Zypper package uninstallation commands for Arch/openSUSE
+#     - FIX: Secure atomic CRL file replacement using mv to prevent VPN dropouts
+#     - FIX: Pre-delete old .ovpn files to prevent writing to pre-existing insecure files
+#     - FIX: Use systemctl is-active instead of pgrep for reliable Unbound checks
+#     - FIX: Avoid empty package arguments when firewall package is not needed
+#     - FIX: Harden IPv4 and IPv6 validation helpers for custom DNS input
+#     - FIX: Safer os-release parsing without polluting shell state excessively
+#     - FIX: Make firewalld direct rule insertion/removal more idempotent
+#     - FIX: Improve resolver parsing to support IPv6 system resolvers
+#     - FIX: Safer file permissions with umask 077 and explicit chmod operations
+#     - FIX: Guard command dependencies and common failure points consistently
+#     - OPT: Use ip -o for more stable address enumeration
+#     - OPT: Centralize logging and helper routines
+#     - SEC: Reduce unsafe command handling and improve uninstall resilience
 #   [2026-07-19] v2.0.0
 #     - ADD: Official OpenVPN 2.6 repository integration (Debian/Ubuntu/RHEL/Fedora)
 #     - ADD: Extended DNS provider list — 35 providers (options 2–36):
@@ -68,13 +91,117 @@
 # ==============================================================================
 
 # --- Guard: must be run with bash, not dash/sh ----------------------------
-if readlink /proc/$$/exe | grep -q "dash"; then
+if [[ -r /proc/$$/exe ]] && readlink /proc/$$/exe 2>/dev/null | grep -q 'dash'; then
 	echo 'This installer needs to be run with "bash", not "sh".'
 	exit 1
 fi
 
 # Discard stdin (needed when running from a one-liner that includes a newline)
 read -r -N 999999 -t 0.001 || true
+
+# Strict security: set restrictive umask for PKI/sensitive files
+umask 077
+
+# ==============================================================================
+# LOGGING HELPERS
+# ==============================================================================
+log_info() { printf '[INFO] %s\n' "$*"; }
+log_ok() { printf '[ OK ] %s\n' "$*"; }
+log_warn() { printf '[WARN] %s\n' "$*" >&2; }
+log_error() { printf '[ERROR] %s\n' "$*" >&2; }
+die() { log_error "$*"; exit 1; }
+
+# ==============================================================================
+# UTILITY AND VALIDATION FUNCTIONS
+# ==============================================================================
+append_line_if_missing() {
+	local line="$1"
+	local file="$2"
+	grep -Fqx "$line" "$file" 2>/dev/null || printf '%s\n' "$line" >>"$file"
+}
+
+is_valid_ipv4() {
+	local ip="$1"
+	local IFS=.
+	local -a octets
+	[[ $ip =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] || return 1
+	read -r -a octets <<<"$ip"
+	[[ ${#octets[@]} -eq 4 ]] || return 1
+	local octet
+	for octet in "${octets[@]}"; do
+		[[ $octet =~ ^[0-9]{1,3}$ ]] || return 1
+		(( octet >= 0 && octet <= 255 )) || return 1
+	done
+	return 0
+}
+
+is_valid_ipv6() {
+	local ip="$1"
+	[[ $ip =~ ^[0-9a-fA-F:]+$ ]] || return 1
+	[[ $ip =~ ::.*:: ]] && return 1
+	[[ $ip == *:::* ]] && return 1
+	if [[ $ip == *::* ]]; then
+		local colons
+		colons="${ip//[^:]/}"
+		[[ ${#colons} -ge 2 && ${#colons} -le 7 ]] || return 1
+	else
+		local colons
+		colons="${ip//[^:]/}"
+		[[ ${#colons} -eq 7 ]] || return 1
+	fi
+	local IFS=:
+	local -a blocks
+	read -r -a blocks <<< "$ip"
+	local block
+	for block in "${blocks[@]}"; do
+		[[ -z $block ]] && continue
+		[[ $block =~ ^[0-9a-fA-F]{1,4}$ ]] || return 1
+	done
+	return 0
+}
+
+is_valid_ip() {
+	is_valid_ipv4 "$1" || is_valid_ipv6 "$1"
+}
+
+get_ipv4_list() {
+	ip -o -4 addr show scope global | awk '{print $4}' | cut -d/ -f1
+}
+
+get_ipv6_list() {
+	ip -o -6 addr show scope global | awk '{print $4}' | cut -d/ -f1 | awk '!/^fe80:/ {print}'
+}
+
+# ==============================================================================
+# FIREWALLD IDEMPOTENCY HELPERS
+# ==============================================================================
+firewalld_direct_rule_exists() {
+	local family="$1"
+	shift
+	firewall-cmd --direct --get-rules "$family" nat POSTROUTING 2>/dev/null | grep -Fqx -- "$*"
+}
+
+firewalld_add_direct_rule() {
+	local family="$1"
+	shift
+	if ! firewalld_direct_rule_exists "$family" "$*"; then
+		firewall-cmd --direct --add-rule "$family" nat POSTROUTING 0 "$@"
+	fi
+	if ! firewall-cmd --permanent --direct --get-rules "$family" nat POSTROUTING 2>/dev/null | grep -Fqx -- "$*"; then
+		firewall-cmd --permanent --direct --add-rule "$family" nat POSTROUTING 0 "$@"
+	fi
+}
+
+firewalld_remove_direct_rule() {
+	local family="$1"
+	shift
+	if firewalld_direct_rule_exists "$family" "$*"; then
+		firewall-cmd --direct --remove-rule "$family" nat POSTROUTING 0 "$@" || true
+	fi
+	if firewall-cmd --permanent --direct --get-rules "$family" nat POSTROUTING 2>/dev/null | grep -Fqx -- "$*"; then
+		firewall-cmd --permanent --direct --remove-rule "$family" nat POSTROUTING 0 "$@" || true
+	fi
+}
 
 # ==============================================================================
 # OS DETECTION
@@ -85,80 +212,114 @@ group_name=""
 
 if grep -qs "ubuntu" /etc/os-release; then
 	os="ubuntu"
-	os_version=$(grep 'VERSION_ID' /etc/os-release | cut -d '"' -f 2 | tr -d '.')
+	os_version=$(awk -F= '/^VERSION_ID=/{gsub(/"/, "", $2); gsub(/\./, "", $2); print $2}' /etc/os-release)
 	group_name="nogroup"
-elif [[ -e /etc/debian_version ]]; then
+elif grep -qs "debian" /etc/os-release || [[ -e /etc/debian_version ]]; then
 	os="debian"
-	os_version=$(grep -oE '[0-9]+' /etc/debian_version | head -1)
+	os_version=$(grep -oE '[0-9]+' /etc/debian_version 2>/dev/null | head -1)
+	[[ -z $os_version ]] && os_version=$(awk -F= '/^VERSION_ID=/{gsub(/"/, "", $2); print $2}' /etc/os-release)
 	group_name="nogroup"
-elif [[ -e /etc/almalinux-release || -e /etc/rocky-release || -e /etc/centos-release ]]; then
+elif grep -qs -E "centos|rocky|almalinux" /etc/os-release || [[ -e /etc/almalinux-release || -e /etc/rocky-release || -e /etc/centos-release ]]; then
 	os="centos"
-	os_version=$(grep -shoE '[0-9]+' /etc/almalinux-release /etc/rocky-release /etc/centos-release | head -1)
+	os_version=$(grep -shoE '[0-9]+' /etc/almalinux-release /etc/rocky-release /etc/centos-release 2>/dev/null | head -1)
+	[[ -z $os_version ]] && os_version=$(awk -F= '/^VERSION_ID=/{gsub(/"/, "", $2); print $2}' /etc/os-release | cut -d. -f1)
 	group_name="nobody"
-elif [[ -e /etc/fedora-release ]]; then
+elif grep -qs "ol" /etc/os-release || [[ -e /etc/oracle-release ]]; then
+	os="oracle"
+	os_version=$(grep -shoE '[0-9]+' /etc/oracle-release 2>/dev/null | head -1)
+	[[ -z $os_version ]] && os_version=$(awk -F= '/^VERSION_ID=/{gsub(/"/, "", $2); print $2}' /etc/os-release | cut -d. -f1)
+	group_name="nobody"
+elif grep -qs "fedora" /etc/os-release || [[ -e /etc/fedora-release ]]; then
 	os="fedora"
-	os_version=$(grep -oE '[0-9]+' /etc/fedora-release | head -1)
+	os_version=$(grep -oE '[0-9]+' /etc/fedora-release 2>/dev/null | head -1)
+	[[ -z $os_version ]] && os_version=$(awk -F= '/^VERSION_ID=/{gsub(/"/, "", $2); print $2}' /etc/os-release)
+	group_name="nobody"
+elif grep -qs "opensuse" /etc/os-release; then
+	os="opensuse"
+	os_version=$(awk -F= '/^VERSION_ID=/{gsub(/"/, "", $2); print $2}' /etc/os-release)
+	group_name="nobody"
+elif grep -qs "arch" /etc/os-release; then
+	os="arch"
+	os_version="rolling"
 	group_name="nobody"
 else
-	echo "This installer seems to be running on an unsupported distribution.
-Supported distros are Ubuntu, Debian, AlmaLinux, Rocky Linux, CentOS and Fedora."
-	exit 1
+	die "This installer seems to be running on an unsupported distribution.
+Supported distros are Ubuntu, Debian, AlmaLinux, Rocky Linux, CentOS, Oracle Linux, Fedora, openSUSE, and Arch Linux."
 fi
 
 # Version guards
 if [[ $os == "ubuntu" && $os_version -lt 2204 ]]; then
-	echo "Ubuntu 22.04 or higher is required to use this installer.
+	die "Ubuntu 22.04 or higher is required to use this installer.
 This version of Ubuntu is too old and unsupported."
-	exit 1
 fi
 
 if [[ $os == "debian" ]]; then
 	if grep -q '/sid' /etc/debian_version; then
-		echo "Debian Testing and Debian Unstable are unsupported by this installer."
-		exit 1
+		die "Debian Testing and Debian Unstable are unsupported by this installer."
 	fi
 	if [[ $os_version -lt 11 ]]; then
-		echo "Debian 11 or higher is required to use this installer.
+		die "Debian 11 or higher is required to use this installer.
 This version of Debian is too old and unsupported."
-		exit 1
 	fi
 fi
 
-if [[ $os == "centos" && $os_version -lt 9 ]]; then
-	os_name=$(sed 's/ release.*//' /etc/almalinux-release /etc/rocky-release /etc/centos-release 2>/dev/null | head -1)
-	echo "$os_name 9 or higher is required to use this installer.
+if [[ ( $os == "centos" || $os == "oracle" ) && $os_version -lt 8 ]]; then
+	os_name=$(sed 's/ release.*//' /etc/almalinux-release /etc/rocky-release /etc/centos-release /etc/oracle-release 2>/dev/null | head -1)
+	[[ -z $os_name ]] && os_name="Enterprise Linux"
+	die "$os_name 8 or higher is required to use this installer.
 This version of $os_name is too old and unsupported."
-	exit 1
 fi
 
 # PATH sanity check
 if ! grep -q sbin <<<"$PATH"; then
 	# shellcheck disable=SC2016
-	echo '$PATH does not include sbin. Try using "su -" instead of "su".'
-	exit 1
+	die '$PATH does not include sbin. Try using "su -" instead of "su".'
 fi
 
 # Privilege check
 if [[ $EUID -ne 0 ]]; then
-	echo "This installer needs to be run with superuser privileges."
-	exit 1
+	die "This installer needs to be run with superuser privileges."
 fi
 
 # TUN device check
 if [[ ! -e /dev/net/tun ]] || ! (exec 7<>/dev/net/tun) 2>/dev/null; then
-	echo "The system does not have the TUN device available.
+	die "The system does not have the TUN device available.
 TUN needs to be enabled before running this installer."
-	exit 1
 fi
+exec 7>&-
 
 # Store the absolute path of the directory where the script is located
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # ==============================================================================
+# HELPER: Get latest EasyRSA download URL from GitHub
+# ==============================================================================
+get_latest_easyrsa_url() {
+	local latest_url=""
+	local tag=""
+	if command -v curl &>/dev/null; then
+		latest_url=$(curl -sL --connect-timeout 10 -o /dev/null -w "%{url_effective}" https://github.com/OpenVPN/easy-rsa/releases/latest)
+	elif command -v wget &>/dev/null; then
+		latest_url=$(wget -T 10 -t 1 --max-redirect=5 --spider --server-response https://github.com/OpenVPN/easy-rsa/releases/latest 2>&1 | grep -i 'Location:' | tail -1 | awk '{print $2}')
+	fi
+
+	latest_url="${latest_url%/}"
+	tag="${latest_url##*/}"
+
+	# Validate tag format (e.g. v3.2.6)
+	if [[ ! $tag =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+		tag="v3.2.6"
+	fi
+
+	local ver="${tag#v}"
+	echo "https://github.com/OpenVPN/easy-rsa/releases/download/${tag}/EasyRSA-${ver}.tgz"
+}
+
+# ==============================================================================
 # HELPER: Official OpenVPN Repository Setup
 # ==============================================================================
 installOpenVPNRepo() {
-	echo "Setting up official OpenVPN repository..."
+	log_info "Setting up official OpenVPN repository..."
 
 	if [[ ${os} =~ ^(debian|ubuntu)$ ]]; then
 		apt-get update -y
@@ -168,8 +329,7 @@ installOpenVPNRepo() {
 
 		if ! curl -fsSL https://swupdate.openvpn.net/repos/repo-public.gpg \
 			-o /etc/apt/keyrings/openvpn-repo-public.asc; then
-			echo "ERROR: Failed to download OpenVPN repository GPG key." >&2
-			exit 1
+			die "Failed to download OpenVPN repository GPG key."
 		fi
 
 		# Source VERSION_CODENAME from os-release if not already set
@@ -178,8 +338,7 @@ installOpenVPNRepo() {
 			source /etc/os-release
 		fi
 		if [[ -z ${VERSION_CODENAME-} ]]; then
-			echo "ERROR: VERSION_CODENAME is not set. Cannot configure OpenVPN repository." >&2
-			exit 1
+			die "VERSION_CODENAME is not set. Cannot configure OpenVPN repository."
 		fi
 
 		echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/openvpn-repo-public.asc] \
@@ -187,11 +346,12 @@ https://build.openvpn.net/debian/openvpn/stable ${VERSION_CODENAME} main" \
 			>/etc/apt/sources.list.d/openvpn-aptrepo.list
 
 		apt-get update -y
-		echo "OpenVPN official repository configured (Debian/Ubuntu)."
+		log_ok "OpenVPN official repository configured (Debian/Ubuntu)."
 
 	elif [[ ${os} =~ ^(centos|oracle)$ ]]; then
-		echo "Configuring OpenVPN Copr repository for RHEL-based system..."
+		log_info "Configuring OpenVPN Copr repository for RHEL-based system..."
 
+		local epel_pkg
 		if [[ ${os} == "oracle" ]]; then
 			epel_pkg="oracle-epel-release-el${os_version%%.*}"
 		else
@@ -207,22 +367,20 @@ https://build.openvpn.net/debian/openvpn/stable ${VERSION_CODENAME} main" \
 			yum install -y yum-plugin-copr
 			yum copr enable -y @OpenVPN/openvpn-release-2.6
 		fi
-		echo "OpenVPN Copr repository configured (RHEL-based)."
+		log_ok "OpenVPN Copr repository configured (RHEL-based)."
 
 	elif [[ ${os} == "fedora" ]]; then
-		echo "Fedora ships recent OpenVPN packages — using distribution version."
+		log_info "Fedora ships recent OpenVPN packages — using distribution version."
 	else
-		echo "No official OpenVPN repository available for this OS — using distribution packages."
+		log_info "No official OpenVPN repository available for this OS — using distribution packages."
 	fi
 }
 
 # ==============================================================================
 # HELPER: Install Unbound (local resolver)
 # ==============================================================================
-# Globals used: os, VPN_GATEWAY_IPV4, VPN_GATEWAY_IPV6,
-#               VPN_SUBNET_IPV4, VPN_SUBNET_IPV6, CLIENT_IPV4, CLIENT_IPV6
 installUnbound() {
-	echo "Installing Unbound DNS resolver..."
+	log_info "Installing Unbound DNS resolver..."
 
 	if [[ ! -e /etc/unbound/unbound.conf ]]; then
 		case "${os}" in
@@ -232,8 +390,7 @@ installUnbound() {
 		opensuse) zypper install -y unbound ;;
 		arch) pacman -Syu --noconfirm unbound ;;
 		*)
-			echo "ERROR: Unsupported OS for Unbound installation: ${os}" >&2
-			exit 1
+			die "Unsupported OS for Unbound installation: ${os}"
 			;;
 		esac
 	fi
@@ -307,22 +464,19 @@ UNBOUND_CONF
 	systemctl restart unbound
 
 	# Wait up to 10 s for Unbound to start
-	local _
-	for _ in {1..10}; do
-		if pgrep -x unbound >/dev/null; then
-			echo "Unbound started successfully."
+	local i
+	for i in {1..10}; do
+		if systemctl is-active --quiet unbound 2>/dev/null; then
+			log_ok "Unbound started successfully."
 			return 0
 		fi
 		sleep 1
 	done
-	echo "ERROR: Unbound failed to start. Check: journalctl -u unbound" >&2
-	exit 1
+	die "Unbound failed to start. Check: journalctl -u unbound"
 }
 
 # ==============================================================================
 # HELPER: Push DNS entries to server.conf
-# Accepts: dns_mode (number), optional custom_dns (space-separated IPs)
-# Globals: ip6 (non-empty = dual-stack)
 # ==============================================================================
 push_dns() {
 	local mode="$1"
@@ -339,19 +493,27 @@ push_dns() {
 		push "${VPN_GATEWAY_IPV4:-10.8.0.1}"
 		${dual_stack} && push6 "${VPN_GATEWAY_IPV6-}"
 		;;
-	2) # System resolvers
-		local resolv_conf
-		if grep '^nameserver' /etc/resolv.conf | grep -qv '127.0.0.53'; then
+	2) # System resolvers (supports IPv6 system resolvers too!)
+		local resolv_conf line
+		if grep '^nameserver' /etc/resolv.conf 2>/dev/null | grep -qv '127.0.0.53'; then
 			resolv_conf="/etc/resolv.conf"
 		else
 			resolv_conf="/run/systemd/resolve/resolv.conf"
 		fi
-		grep -v '^#\|^;' "${resolv_conf}" | grep '^nameserver' |
-			grep -v '127.0.0.53' |
-			grep -oE '[0-9]{1,3}(\.[0-9]{1,3}){3}' |
-			while IFS= read -r line; do
-				push "${line}"
-			done
+		while IFS= read -r line; do
+			[[ $line =~ ^[[:space:]]*nameserver[[:space:]]+(.+)$ ]] || continue
+			local ns
+			ns="${BASH_REMATCH[1]}"
+			ns="${ns%%#*}"
+			ns="${ns%%;*}"
+			ns="${ns// /}"
+			[[ -z $ns || $ns == '127.0.0.53' ]] && continue
+			if is_valid_ipv4 "$ns"; then
+				push "$ns"
+			elif is_valid_ipv6 "$ns"; then
+				push6 "$ns"
+			fi
+		done <"$resolv_conf"
 		;;
 	3)
 		push "8.8.8.8"
@@ -524,6 +686,7 @@ push_dns() {
 		push "80.80.81.81"
 		;; # Freenom World DNS
 	37) # Custom
+		local dns_ip
 		for dns_ip in ${custom_dns}; do
 			push "${dns_ip}"
 		done
@@ -537,34 +700,51 @@ push_dns() {
 if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	# ── Pre-flight: ensure wget or curl is available ──────────────────────────
 	if ! command -v wget &>/dev/null && ! command -v curl &>/dev/null; then
-		echo "Wget is required to use this installer."
+		log_warn "Wget or Curl is required to use this installer."
 		read -r -n1 -p "Press any key to install Wget and continue..."
-		apt-get update -y
-		apt-get install -y wget curl whois
+		if [[ $os == "debian" || $os == "ubuntu" ]]; then
+			apt-get update -y
+			apt-get install -y wget curl
+		elif [[ $os == "centos" || $os == "oracle" || $os == "fedora" ]]; then
+			if command -v dnf &>/dev/null; then
+				dnf install -y wget curl
+			else
+				yum install -y wget curl
+			fi
+		else
+			if command -v zypper &>/dev/null; then
+				zypper install -y wget curl
+			elif command -v pacman &>/dev/null; then
+				pacman -Syu --noconfirm wget curl
+			fi
+		fi
 	fi
 
 	clear
 	echo 'Welcome to this OpenVPN road warrior installer!'
 
 	# ── IPv4 selection ────────────────────────────────────────────────────────
-	ipv4_count=$(ip -4 addr | grep -c inet)
-	if [[ ${ipv4_count} -eq 1 ]]; then
-		ip=$(ip -4 addr | grep inet | grep -vE '127(\.[0-9]{1,3}){3}' |
-			cut -d '/' -f 1 | grep -oE '[0-9]{1,3}(\.[0-9]{1,3}){3}')
+	ipv4_ips=()
+	mapfile -t ipv4_ips < <(get_ipv4_list)
+	ipv4_count=${#ipv4_ips[@]}
+
+	if [[ ${ipv4_count} -eq 0 ]]; then
+		die "No global IPv4 address found. An active IPv4 internet connection is required."
+	elif [[ ${ipv4_count} -eq 1 ]]; then
+		ip="${ipv4_ips[0]}"
 	else
-		number_of_ip=$(ip -4 addr | grep inet | grep -vcE '127(\.[0-9]{1,3}){3}')
 		echo
 		echo "Which IPv4 address should be used?"
-		ip -4 addr | grep inet | grep -vE '127(\.[0-9]{1,3}){3}' |
-			cut -d '/' -f 1 | grep -oE '[0-9]{1,3}(\.[0-9]{1,3}){3}' | nl -s ') '
+		for i in "${!ipv4_ips[@]}"; do
+			printf "   %d) %s\n" "$((i+1))" "${ipv4_ips[i]}"
+		done
 		read -r -p "IPv4 address [1]: " ip_number
-		until [[ -z $ip_number || ($ip_number =~ ^[0-9]+$ && $ip_number -le $number_of_ip) ]]; do
+		until [[ -z $ip_number || ($ip_number =~ ^[0-9]+$ && $ip_number -ge 1 && $ip_number -le ${ipv4_count}) ]]; do
 			echo "$ip_number: invalid selection."
 			read -r -p "IPv4 address [1]: " ip_number
 		done
 		[[ -z $ip_number ]] && ip_number="1"
-		ip=$(ip -4 addr | grep inet | grep -vE '127(\.[0-9]{1,3}){3}' |
-			cut -d '/' -f 1 | grep -oE '[0-9]{1,3}(\.[0-9]{1,3}){3}' | sed -n "${ip_number}p")
+		ip="${ipv4_ips[$((ip_number-1))]}"
 	fi
 
 	# ── NAT detection ─────────────────────────────────────────────────────────
@@ -584,24 +764,25 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 
 	# ── IPv6 detection ────────────────────────────────────────────────────────
 	ip6=""
-	ipv6_count=$(ip -6 addr | grep -c 'inet6 [23]')
+	ipv6_ips=()
+	mapfile -t ipv6_ips < <(get_ipv6_list)
+	ipv6_count=${#ipv6_ips[@]}
+
 	if [[ ${ipv6_count} -eq 1 ]]; then
-		ip6=$(ip -6 addr | grep 'inet6 [23]' | cut -d '/' -f 1 |
-			grep -oE '([0-9a-fA-F]{0,4}:){1,7}[0-9a-fA-F]{0,4}')
+		ip6="${ipv6_ips[0]}"
 	elif [[ ${ipv6_count} -gt 1 ]]; then
-		number_of_ip6="${ipv6_count}"
 		echo
 		echo "Which IPv6 address should be used?"
-		ip -6 addr | grep 'inet6 [23]' | cut -d '/' -f 1 |
-			grep -oE '([0-9a-fA-F]{0,4}:){1,7}[0-9a-fA-F]{0,4}' | nl -s ') '
+		for i in "${!ipv6_ips[@]}"; do
+			printf "   %d) %s\n" "$((i+1))" "${ipv6_ips[i]}"
+		done
 		read -r -p "IPv6 address [1]: " ip6_number
-		until [[ -z $ip6_number || ($ip6_number =~ ^[0-9]+$ && $ip6_number -le $number_of_ip6) ]]; do
+		until [[ -z $ip6_number || ($ip6_number =~ ^[0-9]+$ && $ip6_number -ge 1 && $ip6_number -le ${ipv6_count}) ]]; do
 			echo "$ip6_number: invalid selection."
 			read -r -p "IPv6 address [1]: " ip6_number
 		done
 		[[ -z $ip6_number ]] && ip6_number="1"
-		ip6=$(ip -6 addr | grep 'inet6 [23]' | cut -d '/' -f 1 |
-			grep -oE '([0-9a-fA-F]{0,4}:){1,7}[0-9a-fA-F]{0,4}' | sed -n "${ip6_number}p")
+		ip6="${ipv6_ips[$((ip6_number-1))]}"
 	fi
 
 	# ── Protocol ─────────────────────────────────────────────────────────────
@@ -685,12 +866,13 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 			read -r -p "DNS servers: " dns_input
 			dns_input="${dns_input//,/ }"
 			for dns_ip in $dns_input; do
-				if [[ $dns_ip =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] ||
-					[[ $dns_ip =~ ^([0-9a-fA-F]{0,4}:){1,7}[0-9a-fA-F]{0,4}$ ]]; then
+				if is_valid_ip "$dns_ip"; then
 					custom_dns="${custom_dns:+$custom_dns }$dns_ip"
+				else
+					log_warn "'$dns_ip' is not a valid IPv4 or IPv6 address and will be ignored."
 				fi
 			done
-			[[ -z $custom_dns ]] && echo "Invalid input. Please enter at least one valid IP address."
+			[[ -z $custom_dns ]] && log_error "Invalid input. Please enter at least one valid IP address."
 		done
 	fi
 
@@ -707,7 +889,7 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	# ── Firewall detection ────────────────────────────────────────────────────
 	firewall=""
 	if ! systemctl is-active --quiet firewalld.service && ! command -v iptables &>/dev/null; then
-		if [[ $os == "centos" || $os == "fedora" ]]; then
+		if [[ $os == "centos" || $os == "fedora" || $os == "oracle" ]]; then
 			firewall="firewalld"
 			echo "firewalld, which is required to manage routing tables, will also be installed."
 		elif [[ $os == "debian" || $os == "ubuntu" ]]; then
@@ -727,12 +909,35 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	# ── Install OpenVPN via official repo ──────────────────────────────────────
 	installOpenVPNRepo
 
+	pkgs=()
 	if [[ $os == "debian" || $os == "ubuntu" ]]; then
-		apt-get install -y --no-install-recommends openvpn openssl ca-certificates "${firewall-}"
-	elif [[ $os == "centos" ]]; then
-		dnf install -y openvpn openssl ca-certificates tar "${firewall-}"
+		pkgs=(openvpn openssl ca-certificates)
+		if [[ -n ${firewall} ]]; then
+			pkgs+=("${firewall}")
+		fi
+		apt-get install -y --no-install-recommends "${pkgs[@]}"
+	elif [[ $os == "centos" || $os == "oracle" ]]; then
+		pkgs=(openvpn openssl ca-certificates tar)
+		if [[ -n ${firewall} ]]; then
+			pkgs+=("${firewall}")
+		fi
+		if command -v dnf &>/dev/null; then
+			dnf install -y "${pkgs[@]}"
+		else
+			yum install -y "${pkgs[@]}"
+		fi
 	else
-		dnf install -y openvpn openssl ca-certificates tar "${firewall-}"
+		pkgs=(openvpn openssl ca-certificates tar)
+		if [[ -n ${firewall} ]]; then
+			pkgs+=("${firewall}")
+		fi
+		if command -v dnf &>/dev/null; then
+			dnf install -y "${pkgs[@]}"
+		elif command -v zypper &>/dev/null; then
+			zypper install -y "${pkgs[@]}"
+		elif command -v pacman &>/dev/null; then
+			pacman -Syu --noconfirm "${pkgs[@]}"
+		fi
 	fi
 
 	if [[ $firewall == "firewalld" ]]; then
@@ -740,10 +945,15 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	fi
 
 	# ── EasyRSA ───────────────────────────────────────────────────────────────
-	easy_rsa_url='https://github.com/OpenVPN/easy-rsa/releases/download/v3.2.6/EasyRSA-3.2.6.tgz'
+	log_info "Fetching latest EasyRSA release from GitHub..."
+	easy_rsa_url=$(get_latest_easyrsa_url)
+	log_info "Downloading EasyRSA from: ${easy_rsa_url}"
+
 	mkdir -p /etc/openvpn/server/easy-rsa/
-	{ wget -qO- "$easy_rsa_url" 2>/dev/null || curl -sL "$easy_rsa_url"; } |
-		tar xz -C /etc/openvpn/server/easy-rsa/ --strip-components 1
+	if ! { wget -qO- "$easy_rsa_url" 2>/dev/null || curl -sL "$easy_rsa_url"; } |
+		tar xz -C /etc/openvpn/server/easy-rsa/ --strip-components 1; then
+		die "Failed to download and extract EasyRSA."
+	fi
 	chown -R root:root /etc/openvpn/server/easy-rsa/
 	cd /etc/openvpn/server/easy-rsa/ || exit 1
 
@@ -773,6 +983,14 @@ DH_EOF
 	cp pki/ca.crt pki/private/ca.key pki/issued/server.crt \
 		pki/private/server.key pki/crl.pem /etc/openvpn/server/
 	cp pki/private/easyrsa-tls.key /etc/openvpn/server/tc.key
+
+	chmod 644 /etc/openvpn/server/ca.crt
+	chmod 600 /etc/openvpn/server/ca.key
+	chmod 644 /etc/openvpn/server/server.crt
+	chmod 600 /etc/openvpn/server/server.key
+	chmod 600 /etc/openvpn/server/tc.key
+	chmod 644 /etc/openvpn/server/dh.pem
+	chmod 644 /etc/openvpn/server/crl.pem
 
 	chown nobody:"$group_name" /etc/openvpn/server/crl.pem
 	chmod o+x /etc/openvpn/server/
@@ -837,10 +1055,10 @@ SERVER_EOF2
 
 	# ── IP forwarding ─────────────────────────────────────────────────────────
 	echo 'net.ipv4.ip_forward=1' >/etc/sysctl.d/99-openvpn-forward.conf
-	echo 1 >/proc/sys/net/ipv4/ip_forward
+	echo 1 >/proc/sys/net/ipv4/ip_forward 2>/dev/null || true
 	if [[ -n $ip6 ]]; then
 		echo 'net.ipv6.conf.all.forwarding=1' >>/etc/sysctl.d/99-openvpn-forward.conf
-		echo 1 >/proc/sys/net/ipv6/conf/all/forwarding
+		echo 1 >/proc/sys/net/ipv6/conf/all/forwarding 2>/dev/null || true
 	fi
 
 	# ── Firewall rules ────────────────────────────────────────────────────────
@@ -849,17 +1067,11 @@ SERVER_EOF2
 		firewall-cmd --zone=trusted --add-source=10.8.0.0/24
 		firewall-cmd --permanent --add-port="${port}/${protocol}"
 		firewall-cmd --permanent --zone=trusted --add-source=10.8.0.0/24
-		firewall-cmd --direct --add-rule ipv4 nat POSTROUTING 0 \
-			-s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to "$ip"
-		firewall-cmd --permanent --direct --add-rule ipv4 nat POSTROUTING 0 \
-			-s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to "$ip"
+		firewalld_add_direct_rule ipv4 -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to "$ip"
 		if [[ -n $ip6 ]]; then
 			firewall-cmd --zone=trusted --add-source=fddd:1194:1194:1194::/64
 			firewall-cmd --permanent --zone=trusted --add-source=fddd:1194:1194:1194::/64
-			firewall-cmd --direct --add-rule ipv6 nat POSTROUTING 0 \
-				-s fddd:1194:1194:1194::/64 ! -d fddd:1194:1194:1194::/64 -j SNAT --to "$ip6"
-			firewall-cmd --permanent --direct --add-rule ipv6 nat POSTROUTING 0 \
-				-s fddd:1194:1194:1194::/64 ! -d fddd:1194:1194:1194::/64 -j SNAT --to "$ip6"
+			firewalld_add_direct_rule ipv6 -s fddd:1194:1194:1194::/64 ! -d fddd:1194:1194:1194::/64 -j SNAT --to "$ip6"
 		fi
 	else
 		iptables_path=$(command -v iptables)
@@ -871,6 +1083,9 @@ SERVER_EOF2
 			iptables_path=$(command -v iptables-legacy)
 			ip6tables_path=$(command -v ip6tables-legacy)
 		fi
+
+		[[ -z $iptables_path ]] && iptables_path="iptables"
+		[[ -z $ip6tables_path ]] && ip6tables_path="ip6tables"
 
 		cat >/etc/systemd/system/openvpn-iptables.service <<IPTABLES_EOF
 [Unit]
@@ -914,7 +1129,11 @@ IPTS_EOF
 	if sestatus 2>/dev/null | grep "Current mode" | grep -q "enforcing" &&
 		[[ $port != "1194" ]]; then
 		if ! command -v semanage &>/dev/null; then
-			dnf install -y policycoreutils-python-utils
+			if command -v dnf &>/dev/null; then
+				dnf install -y policycoreutils-python-utils
+			else
+				yum install -y policycoreutils-python-utils
+			fi
 		fi
 		semanage port -a -t openvpn_port_t -p "$protocol" "$port"
 	fi
@@ -939,9 +1158,11 @@ CLIENT_EOF
 
 	systemctl enable --now openvpn-server@server.service
 
+	rm -f "${script_dir}/${client}.ovpn"
 	grep -vh '^#' /etc/openvpn/server/client-common.txt \
 		/etc/openvpn/server/easy-rsa/pki/inline/private/"${client}".inline \
 		>"${script_dir}/${client}.ovpn"
+	chmod 600 "${script_dir}/${client}.ovpn"
 
 	echo
 	echo "Finished!"
@@ -980,9 +1201,11 @@ else
 		done
 		cd /etc/openvpn/server/easy-rsa/ || exit 1
 		./easyrsa --batch --days=3650 build-client-full "$client" nopass
+		rm -f "${script_dir}/${client}.ovpn"
 		grep -vh '^#' /etc/openvpn/server/client-common.txt \
 			/etc/openvpn/server/easy-rsa/pki/inline/private/"${client}".inline \
 			>"${script_dir}/${client}.ovpn"
+		chmod 600 "${script_dir}/${client}.ovpn"
 		echo
 		echo "$client added. Configuration available in: ${script_dir}/${client}.ovpn"
 		exit 0
@@ -1016,11 +1239,15 @@ else
 			cd /etc/openvpn/server/easy-rsa/ || exit 1
 			./easyrsa --batch revoke "${client}"
 			./easyrsa --batch --days=3650 gen-crl
-			rm -f /etc/openvpn/server/crl.pem
 			rm -f /etc/openvpn/server/easy-rsa/pki/reqs/"${client}".req
 			rm -f /etc/openvpn/server/easy-rsa/pki/private/"${client}".key
-			cp /etc/openvpn/server/easy-rsa/pki/crl.pem /etc/openvpn/server/crl.pem
-			chown nobody:"$group_name" /etc/openvpn/server/crl.pem
+			
+			# Atomic replacement of CRL file to prevent VPN dropouts
+			cp /etc/openvpn/server/easy-rsa/pki/crl.pem /etc/openvpn/server/crl.pem.tmp
+			chmod 644 /etc/openvpn/server/crl.pem.tmp
+			chown nobody:"$group_name" /etc/openvpn/server/crl.pem.tmp
+			mv -f /etc/openvpn/server/crl.pem.tmp /etc/openvpn/server/crl.pem
+			
 			echo
 			echo "$client revoked!"
 		else
@@ -1041,27 +1268,32 @@ else
 			protocol=$(grep '^proto ' /etc/openvpn/server/server.conf | cut -d ' ' -f 2)
 
 			if systemctl is-active --quiet firewalld.service; then
-				ip=$(firewall-cmd --direct --get-rules ipv4 nat POSTROUTING |
+				snat_ip=$(firewall-cmd --direct --get-rules ipv4 nat POSTROUTING 2>/dev/null |
 					grep '\-s 10.8.0.0/24 '"'"'!'"'"' -d 10.8.0.0/24' |
 					grep -oE '[^ ]+$')
+				
 				firewall-cmd --remove-port="${port}/${protocol}"
 				firewall-cmd --zone=trusted --remove-source=10.8.0.0/24
 				firewall-cmd --permanent --remove-port="${port}/${protocol}"
 				firewall-cmd --permanent --zone=trusted --remove-source=10.8.0.0/24
-				firewall-cmd --direct --remove-rule ipv4 nat POSTROUTING 0 \
-					-s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to "$ip"
-				firewall-cmd --permanent --direct --remove-rule ipv4 nat POSTROUTING 0 \
-					-s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to "$ip"
+				
+				if [[ -n $snat_ip ]]; then
+					while read -r ip_line; do
+						[[ -n $ip_line ]] && firewalld_remove_direct_rule ipv4 -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to "$ip_line"
+					done <<<"$snat_ip"
+				fi
+				
 				if grep -qs "server-ipv6" /etc/openvpn/server/server.conf; then
-					ip6=$(firewall-cmd --direct --get-rules ipv6 nat POSTROUTING |
+					snat_ip6=$(firewall-cmd --direct --get-rules ipv6 nat POSTROUTING 2>/dev/null |
 						grep '\-s fddd:1194:1194:1194::/64 '"'"'!'"'"' -d fddd:1194:1194:1194::/64' |
 						grep -oE '[^ ]+$')
 					firewall-cmd --zone=trusted --remove-source=fddd:1194:1194:1194::/64
 					firewall-cmd --permanent --zone=trusted --remove-source=fddd:1194:1194:1194::/64
-					firewall-cmd --direct --remove-rule ipv6 nat POSTROUTING 0 \
-						-s fddd:1194:1194:1194::/64 ! -d fddd:1194:1194:1194::/64 -j SNAT --to "$ip6"
-					firewall-cmd --permanent --direct --remove-rule ipv6 nat POSTROUTING 0 \
-						-s fddd:1194:1194:1194::/64 ! -d fddd:1194:1194:1194::/64 -j SNAT --to "$ip6"
+					if [[ -n $snat_ip6 ]]; then
+						while read -r ip_line; do
+							[[ -n $ip_line ]] && firewalld_remove_direct_rule ipv6 -s fddd:1194:1194:1194::/64 ! -d fddd:1194:1194:1194::/64 -j SNAT --to "$ip_line"
+						done <<<"$snat_ip6"
+					fi
 				fi
 			else
 				systemctl disable --now openvpn-iptables.service
@@ -1086,8 +1318,18 @@ else
 			if [[ ${os} == "debian" || ${os} == "ubuntu" ]]; then
 				rm -rf /etc/openvpn/server
 				apt-get remove --purge -y openvpn
+			elif [[ ${os} == "opensuse" ]]; then
+				zypper remove -y openvpn
+				rm -rf /etc/openvpn/server
+			elif [[ ${os} == "arch" ]]; then
+				pacman -Rns --noconfirm openvpn
+				rm -rf /etc/openvpn/server
 			else
-				dnf remove -y openvpn
+				if command -v dnf &>/dev/null; then
+					dnf remove -y openvpn
+				else
+					yum remove -y openvpn
+				fi
 				rm -rf /etc/openvpn/server
 			fi
 

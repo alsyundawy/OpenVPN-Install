@@ -68,12 +68,14 @@ Choose one of the installation options below to begin the interactive setup:
 This version is maintained by **alsyundawy** and includes all the features listed in this repository (e.g., dual-stack IPv4/IPv6, extended DNS options, security hardening).
 
 *Using `wget`:*
+
 ```bash
 wget https://raw.githubusercontent.com/alsyundawy/OpenVPN-Install/refs/heads/master/openvpn-install.sh \
   -O openvpn-install.sh && sudo bash openvpn-install.sh
 ```
 
 *Using `curl`:*
+
 ```bash
 curl -O https://raw.githubusercontent.com/alsyundawy/OpenVPN-Install/refs/heads/master/openvpn-install.sh \
   && sudo bash openvpn-install.sh
@@ -84,12 +86,14 @@ curl -O https://raw.githubusercontent.com/alsyundawy/OpenVPN-Install/refs/heads/
 This runs the original script (`openvpn-install-nyr.sh`) by **Nyr**.
 
 *Using `wget`:*
+
 ```bash
 wget https://raw.githubusercontent.com/alsyundawy/OpenVPN-Install/refs/heads/master/openvpn-install-nyr.sh \
   -O openvpn-install-nyr.sh && sudo bash openvpn-install-nyr.sh
 ```
 
 *Using `curl`:*
+
 ```bash
 curl -O https://raw.githubusercontent.com/alsyundawy/OpenVPN-Install/refs/heads/master/openvpn-install-nyr.sh \
   && sudo bash openvpn-install-nyr.sh
@@ -208,6 +212,7 @@ maintenance of the installer:
 ### alsyundawy (Version Maintainer)
 
 - [![Donate via PayPal](https://img.shields.io/badge/Donate-PayPal-00457C?style=flat-square&logo=paypal&logoColor=white)](https://www.paypal.me/alsyundawy)
+- [![Donate via Ko-fi](https://img.shields.io/badge/Donate-Ko--fi-FF5E5B?style=flat-square&logo=ko-fi&logoColor=white)](https://ko-fi.com/alsyundawy)
 
 ---
 

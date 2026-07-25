@@ -6,7 +6,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Shell](https://img.shields.io/badge/shell-bash-89e051.svg)](https://www.gnu.org/software/bash/)
-[![Release](https://img.shields.io/badge/release-v2.0.1-brightgreen.svg)](https://github.com/alsyundawy/Nyr-openvpn-install/releases)
+[![Release](https://img.shields.io/badge/release-v2.0.2-brightgreen.svg)](https://github.com/alsyundawy/Nyr-openvpn-install/releases)
 [![Platform](https://img.shields.io/badge/platform-Linux-lightgrey.svg)](https://www.kernel.org)
 
 🚀 This script lets you set up your own secure OpenVPN server in under a minute,
@@ -25,6 +25,7 @@ generation to firewall rules automatically.
 - [Extended DNS Options](#extended-dns-options)
 - [Post-Installation Management](#post-installation-management)
 - [Security Hardening Defaults](#security-hardening-defaults)
+- [Changelog](#changelog)
 - [Support & Donation](#support-and-donation)
 - [License](#license)
 
@@ -41,8 +42,6 @@ generation to firewall rules automatically.
 | **CentOS / Stream** | 8 | Copr `@OpenVPN/openvpn-release-2.6` |
 | **Oracle Linux** | 8 | Copr `@OpenVPN/openvpn-release-2.6` |
 | **Fedora** | Latest Stable | Distribution Native |
-| **openSUSE** | Leap 15 / Tumbleweed | Distribution Native |
-| **Arch Linux** | Rolling | Distribution Native |
 
 > [!NOTE]
 > ⚠️ Debian Testing and Debian Unstable (Sid) are currently not supported to
@@ -65,7 +64,9 @@ Choose one of the installation options below to begin the interactive setup:
 
 ### 🚀 Option 1: Maintained Version (Recommended)
 
-This version is maintained by **alsyundawy** and includes all the features listed in this repository (e.g., dual-stack IPv4/IPv6, extended DNS options, security hardening).
+This version is maintained by **alsyundawy** and includes all the features
+listed in this repository (e.g., dual-stack IPv4/IPv6, extended DNS options,
+security hardening).
 
 *Using `wget`:*
 
@@ -196,6 +197,91 @@ Select an option:
 - 🔑 **CRL Permissions**: The Certificate Revocation List (`crl.pem`) is owned and
   accessible specifically to the unprivileged OpenVPN daemon so dynamic
   revocation checks function without root.
+
+---
+
+## Changelog
+
+### 🚀 [v2.0.2] - 2026-07-25
+
+- **CHG**: Default IPv4 VPN subnet changed from `10.8.0.0/24` to
+  `172.16.200.0/24`.
+- **CHG**: Removed openSUSE and Arch Linux support to streamline
+  distribution maintenance.
+- **FIX**: Prevent bash octal arithmetic error in `is_valid_ipv4` for
+  numbers with leading zeroes.
+- **FIX**: Correct `firewalld_direct_rule_exists` pattern matching to handle
+  priority prefix.
+- **FIX**: Add fallback path checking for `resolv.conf` system resolver
+  parsing.
+- **FIX**: Sanitize carriage return (`\r`) characters when parsing EasyRSA
+  download headers.
+- **FIX**: Add robust fallback helper `generate_client_config` for client
+  `.ovpn` bundle generation.
+- **FIX**: Dynamic subnet parsing during uninstallation for backward
+  compatibility.
+- **OPT**: Centralize client config generation logic and ensure strict
+  ShellCheck compliance.
+
+### 🛠️ [v2.0.1] - 2026-07-19
+
+- **ADD**: Support for RHEL 8 base, AlmaLinux 8, Rocky Linux 8, and
+  Oracle Linux 8.
+- **ADD**: Dynamic EasyRSA version fetching to always use the latest release.
+- **FIX**: Pacman and Zypper package uninstallation commands for Arch/openSUSE.
+- **FIX**: Secure atomic CRL file replacement using `mv` to prevent VPN
+  dropouts.
+- **FIX**: Pre-delete old `.ovpn` files to prevent writing to pre-existing
+  insecure files.
+- **FIX**: Use `systemctl is-active` instead of `pgrep` for reliable Unbound
+  checks.
+- **FIX**: Avoid empty package arguments when firewall package is not needed.
+- **FIX**: Harden IPv4 and IPv6 validation helpers for custom DNS input.
+- **FIX**: Safer `/etc/os-release` parsing without polluting shell state
+  excessively.
+- **FIX**: Make firewalld direct rule insertion/removal more idempotent.
+- **FIX**: Improve resolver parsing to support IPv6 system resolvers.
+- **FIX**: Safer file permissions with `umask 077` and explicit `chmod`
+  operations.
+- **FIX**: Guard command dependencies and common failure points consistently.
+- **OPT**: Use `ip -o` for more stable address enumeration.
+- **OPT**: Centralize logging and helper routines.
+- **SEC**: Reduce unsafe command handling and improve uninstall resilience.
+
+### 🎉 [v2.0.0] - 2026-07-19
+
+- **ADD**: Official OpenVPN 2.6 repository integration (Debian/Ubuntu/RHEL/
+  Fedora).
+- **ADD**: Extended DNS provider list — 35 providers (options 2–36):
+  Google, Cloudflare (Standard/Security/Family), Quad9 (Secure/Unsecured/ECS),
+  OpenDNS (Home/FamilyShield), AdGuard (Default/Family/Non-Filtering),
+  AliDNS, DNSPod, 114DNS, Baidu DNS, OneDNS, DNSPai,
+  CleanBrowsing (Security/Adult/Family), Verisign, DNS.WATCH,
+  Yandex (Basic/Safe/Family), Level3/Lumen, Neustar (Default/Threat/Family),
+  Oracle Dyn, Alternate DNS, Comodo Secure DNS, Freenom World DNS.
+- **ADD**: IPv6 DNS push for dual-stack systems on all supported providers.
+- **ADD**: Local Unbound resolver option (option 1) with DNSSEC hardening,
+  DNS rebinding protection, and OpenVPN-specific configuration.
+- **ADD**: `installOpenVPNRepo()` function for official repository setup.
+- **ADD**: `installUnbound()` function with per-distro package management.
+- **ADD**: Unbound systemd service validation with retry loop.
+- **FIX**: ShellCheck SC2164 — all `cd` calls guarded with `|| exit`.
+- **FIX**: ShellCheck SC2155 — declare and assign separately.
+- **FIX**: ShellCheck SC2086 — double-quoting all variable expansions.
+- **FIX**: ShellCheck SC2006 — replaced backtick substitutions with `$()`.
+- **FIX**: ShellCheck SC2166 — use `[[ ]]` for compound conditions.
+- **FIX**: Custom DNS input validation now also accepts IPv6 addresses.
+- **OPT**: DNS case block replaced with array-driven `push_dns()` helper.
+- **OPT**: Unbound restart validated with retry loop (up to 10 attempts).
+- **SEC**: Unbound: `hide-identity`, `hide-version`, `harden-glue`,
+  `harden-dnssec-stripped`.
+- **SEC**: Unbound: DNS rebinding protection for RFC1918 + IPv6 ULA ranges.
+- **SEC**: Unbound: `use-caps-for-id` (0x20 encoding) anti-spoofing.
+- **DOC**: Updated header, feature list, usage, and inline comments.
+
+### 📌 [v1.x] - Legacy
+
+- Original Nyr/openvpn-install baseline implementation.
 
 ---
 

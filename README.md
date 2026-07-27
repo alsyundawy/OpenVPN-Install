@@ -308,3 +308,6 @@ maintenance of the installer:
 
 - Copyright (c) 2013-2026 [Nyr](https://github.com/Nyr)
 - Copyright (c) 2026 [alsyundawy](https://github.com/alsyundawy)
+
+
+![Alt](https://repobeats.axiom.co/api/embed/5414bb8ff8713664dc83ec9dd23236d62731707b.svg "Repobeats analytics image")

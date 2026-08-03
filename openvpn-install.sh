@@ -180,7 +180,7 @@ log_prompt() {
 	printf "${COLOR_BOLD}${COLOR_BLUE}%s${COLOR_RESET}\n" "$*"
 }
 log_info() {
-	printf "${COLOR_DIM}[INFO]${COLOR_RESET} %s\n" "$*"
+	printf "${COLOR_CYAN}[INFO]${COLOR_RESET} %s\n" "$*"
 }
 log_ok() {
 	printf "${COLOR_GREEN}[ OK ]${COLOR_RESET} %s\n" "$*"
@@ -192,7 +192,7 @@ log_error() {
 	printf "${COLOR_RED}[ERROR]${COLOR_RESET} %s\n" "$*" >&2
 }
 log_menu() {
-	printf "${COLOR_BOLD}${COLOR_GREEN}   %d)${COLOR_RESET} ${COLOR_WHITE}%s${COLOR_RESET}\n" "$1" "$2"
+	printf "${COLOR_BOLD}${COLOR_GREEN}   %d)${COLOR_RESET} ${COLOR_MAGENTA}%s${COLOR_RESET}\n" "$1" "$2"
 }
 die() {
 	log_error "$*"

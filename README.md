@@ -137,192 +137,721 @@ directly to the script directory.
 
 # 📱 OpenVPN Client Applications
 
-After the installation completes, the installer automatically generates a client configuration profile (`.ovpn`).
+Once the installation completes, the installer automatically generates a client configuration profile (`.ovpn`) in the same directory where the installation script was executed.
 
-Simply download one of the recommended OpenVPN clients below, import the generated profile, and connect securely to your VPN server.
+The generated `.ovpn` file contains everything required to establish a secure VPN connection, including the server configuration, certificates, cryptographic parameters, and client settings.
+
+Simply download one of the recommended OpenVPN clients below, import the generated `.ovpn` profile, and connect securely to your VPN server. Importing a profile from a file is the standard workflow supported by OpenVPN Connect. :contentReference[oaicite:0]{index=0}
 
 > [!TIP]
-> 💡 The generated `.ovpn` profile is fully compatible with **OpenVPN Connect**, **OpenVPN GUI**, **Tunnelblick**, **OpenVPN 3 Linux**, **NetworkManager OpenVPN**, **KDE Plasma**, and **Viscosity**.
+>
+> 💡 The generated `.ovpn` profile is fully compatible with:
+>
+> - 🪟 OpenVPN Connect
+> - 🪟 OpenVPN GUI
+> - 🍎 Tunnelblick
+> - 🍎 Viscosity
+> - 🐧 OpenVPN 3 Linux
+> - 🐧 NetworkManager OpenVPN
+> - 🐧 KDE Plasma NetworkManager
+> - 🌐 MikroTik RouterOS v7 (.ovpn Import)
 
 ---
 
-## 🪟 Windows
+# 🪟 Windows
 
-### ⭐ Official Client (Recommended)
+## ⭐ Recommended Client
 
-Download:
+### OpenVPN Connect (Official)
+
+Official download
 
 https://openvpn.net/client/
 
-Supported versions:
+Supported operating systems
 
 - Windows 11
 - Windows 10
-- Windows Server
+- Windows Server 2022
+- Windows Server 2019
 
-### 🔄 Alternative Client
+### ✨ Features
 
-OpenVPN GUI (Open Source)
-
-https://github.com/OpenVPN/openvpn-gui
-
-### 📥 Import `.ovpn`
-
-1. Install OpenVPN Connect or OpenVPN GUI.
-2. Launch the application.
-3. Click **Import Profile**.
-4. Select the generated `.ovpn` file.
-5. Enter your VPN credentials if required.
-6. Click **Connect**.
+- Official OpenVPN client
+- Easy `.ovpn` import
+- Automatic profile management
+- Automatic updates
+- Modern user interface
+- Multi-profile support
 
 ---
 
-## 🍎 macOS
+## 🔄 Alternative Client
 
-### ⭐ Official Client (Recommended)
+### OpenVPN GUI (Open Source)
 
-OpenVPN Connect
+GitHub
+
+https://github.com/OpenVPN/openvpn-gui
+
+Recommended for users who prefer a lightweight native Windows client.
+
+Features
+
+- Completely free
+- Open source
+- Small footprint
+- Multiple VPN profiles
+- System tray integration
+- Auto-connect support
+
+---
+
+## 📥 Import `.ovpn` using OpenVPN Connect
+
+1. 📄 Download the generated `.ovpn` profile.
+2. 📦 Install **OpenVPN Connect**.
+3. 🚀 Launch the application.
+4. ➕ Click **Add Profile**.
+5. 📂 Select **Upload File**.
+6. 📄 Choose your generated `.ovpn`.
+7. 🔑 Enter your VPN username and password (if required).
+8. 💾 Save the profile.
+9. ✅ Click **Connect**.
+
+> [!TIP]
+> You can also drag and drop the `.ovpn` file directly into OpenVPN Connect on Windows. :contentReference[oaicite:1]{index=1}
+
+---
+
+## 📥 Import `.ovpn` using OpenVPN GUI
+
+1. Install OpenVPN GUI.
+2. Open the application.
+3. Select **Import → Import File**.
+4. Choose your `.ovpn` file.
+5. Wait until the profile is successfully imported.
+6. Right-click the OpenVPN tray icon.
+7. Select the imported profile.
+8. Click **Connect**.
+
+Alternatively, copy the `.ovpn` file into:
+
+```
+C:\Users\<username>\OpenVPN\config\
+```
+
+or
+
+```
+C:\Program Files\OpenVPN\config\
+```
+
+The profile will automatically appear inside OpenVPN GUI after restarting or rescanning the configuration directory. :contentReference[oaicite:2]{index=2}
+
+---
+
+# 🍎 macOS
+
+## ⭐ Recommended Client
+
+### OpenVPN Connect (Official)
+
+Download
 
 https://openvpn.net/client/
 
-### 🆓 Free & Open Source
+Supported versions
 
-Tunnelblick
+- macOS Sequoia
+- macOS Sonoma
+- macOS Ventura
+- Apple Silicon
+- Intel Macs
+
+---
+
+## 🆓 Free & Open Source
+
+### Tunnelblick
+
+Website
 
 https://tunnelblick.net/
 
-### 💼 Commercial
+Tunnelblick is the most popular free OpenVPN client for macOS and is fully compatible with standard `.ovpn` profiles.
 
-Viscosity
+Features
+
+- Free
+- Open Source
+- Native macOS integration
+- Automatic certificate management
+- Supports multiple VPN profiles
+
+---
+
+## 💼 Commercial Alternative
+
+### Viscosity
+
+Website
 
 https://www.sparklabs.com/viscosity/
 
-### 📥 Import using OpenVPN Connect
+Features
+
+- Modern interface
+- Advanced routing
+- DNS management
+- Connection statistics
+- Automatic reconnect
+
+---
+
+## 📥 Import `.ovpn` using OpenVPN Connect
 
 1. Install OpenVPN Connect.
 2. Open the application.
 3. Click **Upload File**.
-4. Select your `.ovpn` profile.
-5. Approve the Network Extension if requested.
-6. Click **Connect**.
-
-### 📥 Import using Tunnelblick
-
-1. Install Tunnelblick.
-2. Double-click the `.ovpn` file.
-3. Choose **Install for Me**.
-4. Click **Connect**.
-
-### 📥 Import using Viscosity
-
-1. Open Viscosity.
-2. Go to **Preferences → Connections**.
-3. Click **+ → Import Connection → From File**.
-4. Select the `.ovpn` profile.
-5. Save.
-6. Connect.
+4. Select your `.ovpn`.
+5. Enter credentials if requested.
+6. Save.
+7. Connect.
 
 ---
 
-## 🐧 Linux
+## 📥 Import `.ovpn` using Tunnelblick
 
-### ⭐ Official Client
+1. Install Tunnelblick.
+2. Double-click the generated `.ovpn`.
+3. Choose **Install for Me** or **Install for All Users**.
+4. Approve the installation.
+5. Enter your macOS administrator password if requested.
+6. Click **Connect**.
 
-OpenVPN 3 Linux
+---
+
+## 📥 Import `.ovpn` using Viscosity
+
+1. Open Viscosity.
+2. Navigate to:
+
+```
+Preferences
+```
+
+3. Select
+
+```
+Connections
+```
+
+4. Click
+
+```
++
+```
+
+5. Choose
+
+```
+Import Connection
+
+↓
+
+From File...
+```
+
+6. Select the `.ovpn` profile.
+7. Save.
+8. Connect.
+
+---
+
+# 🐧 Linux
+
+## ⭐ Official Client
+
+### OpenVPN 3 Linux
+
+Download
 
 https://openvpn.net/client/
 
-### 🖥️ Recommended GUI Clients
+---
 
-Most Linux desktop environments support importing `.ovpn` files directly through NetworkManager.
+## 🖥️ Recommended GUI Clients
 
-Supported desktops:
+The following desktop environments support importing `.ovpn` files using NetworkManager.
 
 - GNOME
 - KDE Plasma
 - Cinnamon
-- MATE
 - XFCE
+- MATE
 - Budgie
 - Unity
 
 ---
 
-### 🟢 GNOME
+## 🟢 GNOME Desktop
 
-Install:
+Install
 
 ```bash
+sudo apt update
 sudo apt install network-manager-openvpn network-manager-openvpn-gnome
 ```
 
-Import:
+Import
 
+```
 Settings
 
-→ Network
+↓
 
-→ VPN
+Network
 
-→ +
+↓
 
-→ Import from File
+VPN
 
-→ Select your `.ovpn`
+↓
+
++
+
+↓
+
+Import from File
+
+↓
+
+Select your .ovpn profile
+```
+
+Click
+
+```
+Connect
+```
 
 ---
 
-### 🔵 KDE Plasma
+## 🔵 KDE Plasma
 
-Install:
+Install
 
 ```bash
+sudo apt update
 sudo apt install plasma-nm network-manager-openvpn
 ```
 
-Import:
+Import
 
+```
 System Settings
 
-→ Connections
+↓
 
-→ Add VPN
+Network
 
-→ Import VPN Connection
+↓
 
-→ Select `.ovpn`
+Connections
+
+↓
+
+Add VPN
+
+↓
+
+Import VPN Connection
+
+↓
+
+Select .ovpn
+```
 
 ---
 
-### ⚙️ Command Line
-
-Install OpenVPN:
+## ⚙️ Import Using NetworkManager CLI
 
 ```bash
+nmcli connection import type openvpn file client.ovpn
+```
+
+List imported connections
+
+```bash
+nmcli connection show
+```
+
+Connect
+
+```bash
+nmcli connection up client
+```
+
+The imported profile is stored as a NetworkManager connection, allowing you to manage it from your desktop environment. :contentReference[oaicite:3]{index=3}
+
+---
+
+## 💻 Command Line (OpenVPN)
+
+Install OpenVPN
+
+Debian / Ubuntu
+
+```bash
+sudo apt update
 sudo apt install openvpn
 ```
 
-Connect:
+Fedora
+
+```bash
+sudo dnf install openvpn
+```
+
+RHEL / AlmaLinux / Rocky Linux
+
+```bash
+sudo dnf install openvpn
+```
+
+Connect
 
 ```bash
 sudo openvpn --config client.ovpn
 ```
 
+Disconnect
+
+Press
+
+```
+CTRL + C
+```
+
 ---
 
-### 💼 Commercial
+## 💼 Commercial Client
 
-Viscosity
+### Viscosity
 
 https://www.sparklabs.com/viscosity/
 
+Supports Linux and provides an easy graphical interface for importing `.ovpn` files.
+
 ---
 
-## ✅ Verify VPN Connection
+# 🌐 Connect to OpenVPN Using `.ovpn` on MikroTik RouterOS
 
-After connecting successfully, verify that your traffic is routed through the VPN.
+Starting with **RouterOS v7.12**, MikroTik supports importing an OpenVPN client configuration directly from a standard `.ovpn` file. This greatly simplifies deployment by automatically importing supported VPN parameters, certificates, and authentication settings. For the best compatibility and latest OpenVPN improvements, use the latest stable RouterOS v7 release. :contentReference[oaicite:0]{index=0}
 
-IPv4
+> [!IMPORTANT]
+>
+> ✅ RouterOS **v7.12 or later** is required for `.ovpn` import.
+>
+> ⭐ The latest stable RouterOS v7 release is strongly recommended.
+
+---
+
+# 📋 Requirements
+
+Before importing your VPN profile, make sure you have:
+
+- ✅ MikroTik RouterOS v7.12+
+- ✅ WinBox, WebFig, or SSH access
+- ✅ Generated `.ovpn` profile
+- ✅ VPN username
+- ✅ VPN password
+- ✅ Correct date and time
+- ✅ NTP synchronization enabled
+
+> [!TIP]
+>
+> TLS certificate validation depends on the router's system clock.
+> Always enable NTP before connecting to an OpenVPN server. :contentReference[oaicite:1]{index=1}
+
+---
+
+# 📂 Method 1 — Import Using WinBox (Recommended)
+
+## Step 1 — Upload the Profile
+
+Open
+
+```
+Files
+```
+
+Drag and drop your generated
+
+```
+client.ovpn
+```
+
+into the router.
+
+---
+
+## Step 2 — Import the Profile
+
+Open
+
+```
+PPP
+```
+
+Select
+
+```
+OVPN
+```
+
+Click
+
+```
+Import
+```
+
+Choose
+
+```
+client.ovpn
+```
+
+Enter
+
+- Username
+- Password
+
+Click
+
+```
+Import
+```
+
+RouterOS will automatically import supported configuration from the profile, including certificates, remote server settings, ciphers, authentication parameters, and TLS authentication when present. Supported parameters depend on the RouterOS version. :contentReference[oaicite:2]{index=2}
+
+---
+
+## Step 3 — Verify Import
+
+Navigate to
+
+```
+Interfaces
+
+↓
+
+OVPN Client
+```
+
+A new interface should appear.
+
+Example
+
+```
+ovpn-client
+```
+
+Enable it if necessary.
+
+---
+
+# 💻 Method 2 — Import Using CLI
+
+Upload
+
+```
+client.ovpn
+```
+
+to the router.
+
+Import it using:
+
+```rsc
+/interface/ovpn-client/import-ovpn-configuration \
+file-name=client.ovpn \
+ovpn-user=myuser \
+ovpn-password=mypassword \
+skip-cert-import=no
+```
+
+If the client private key is protected:
+
+```rsc
+/interface/ovpn-client/import-ovpn-configuration \
+file-name=client.ovpn \
+ovpn-user=myuser \
+ovpn-password=mypassword \
+key-passphrase=myPrivateKeyPassword
+```
+
+This is the import method documented by MikroTik for RouterOS v7. :contentReference[oaicite:3]{index=3}
+
+---
+
+# ▶ Enable the VPN
+
+List interfaces
+
+```rsc
+/interface/ovpn-client/print
+```
+
+Enable
+
+```rsc
+/interface/ovpn-client/enable 0
+```
+
+Replace
+
+```
+0
+```
+
+with your interface number if different.
+
+---
+
+# 🔍 Monitor Connection Status
+
+Monitor the VPN
+
+```rsc
+/interface/ovpn-client/monitor 0
+```
+
+Example
+
+```
+status: connected
+
+uptime: 00:25:42
+
+local-address: 172.16.200.2
+
+remote-address: 172.16.200.1
+```
+
+Show details
+
+```rsc
+/interface/ovpn-client/print detail
+```
+
+A connected interface displays the
+
+```
+R
+```
+
+flag.
+
+---
+
+# 🌍 Route Internet Traffic Through VPN
+
+Automatically install the default route
+
+```rsc
+/interface/ovpn-client
+set 0 add-default-route=yes
+```
+
+Use DNS servers provided by the VPN
+
+```rsc
+/interface/ovpn-client
+set 0 use-peer-dns=yes
+```
+
+Verify routing
+
+```rsc
+/ip/route/print
+```
+
+These options are officially supported RouterOS client properties. :contentReference[oaicite:4]{index=4}
+
+---
+
+# 🧪 Verify Connectivity
+
+Ping Cloudflare DNS
+
+```rsc
+/tool/ping 1.1.1.1
+```
+
+Ping Google DNS
+
+```rsc
+/tool/ping 8.8.8.8
+```
+
+Check default routes
+
+```rsc
+/ip/route/print
+```
+
+View DNS configuration
+
+```rsc
+/ip/dns/print
+```
+
+---
+
+# 🔐 Security Recommendations
+
+- ✅ Always keep RouterOS updated.
+- ✅ Enable automatic NTP synchronization.
+- ✅ Verify the server certificate whenever possible (`verify-server-certificate=yes`).
+- ✅ Generate a unique VPN profile for each router.
+- ✅ Protect exported `.ovpn` files because they may contain certificates and private keys.
+- ✅ Disable unused VPN profiles.
+
+---
+
+# ⚠ RouterOS OpenVPN Limitations
+
+RouterOS implements its own OpenVPN client and does **not** support every OpenVPN directive.
+
+Current notable limitations include:
+
+- ❌ Some OpenVPN directives are unsupported.
+- ❌ LZO compression is not supported and should not be used.
+- ⚠️ Compatibility depends on the RouterOS version.
+- ✅ UDP and TCP are supported in modern RouterOS v7 releases.
+- ✅ TLS authentication can be imported from supported `.ovpn` profiles.
+
+For the latest supported directives and client capabilities, consult the official MikroTik OpenVPN documentation. :contentReference[oaicite:5]{index=5}
+
+---
+
+> [!NOTE]
+>
+> This installer generates standard OpenVPN client profiles designed to work with current RouterOS v7 `.ovpn` import functionality. If your VPN profile uses unsupported directives, RouterOS may ignore them or require manual adjustment according to the official MikroTik documentation. :contentReference[oaicite:6]{index=6}
+
+---
+
+# ✅ Verify VPN Connection
+
+After successfully connecting to your VPN, verify that your traffic is actually routed through the encrypted tunnel.
+
+---
+
+## 🌍 Check Your Public IP Address
+
+### Linux / macOS
 
 ```bash
 curl ifconfig.me
@@ -334,18 +863,345 @@ or
 curl https://icanhazip.com
 ```
 
-The returned IP address should match your VPN server instead of your local Internet connection.
+---
+
+### Windows (PowerShell)
+
+```powershell
+curl ifconfig.me
+```
+
+or
+
+```powershell
+Invoke-RestMethod https://icanhazip.com
+```
 
 ---
 
-## 🔐 Security Tips
+### Verify
 
-- ✅ Keep your `.ovpn` profile private.
-- ✅ Never upload client certificates or private keys publicly.
-- ✅ Revoke compromised certificates immediately.
-- ✅ Generate a unique client profile for each device.
-- ✅ Use UDP whenever possible for better performance.
-- ✅ Use the Local Unbound DNS option for maximum privacy when available.
+The returned public IP address should be your **VPN server's public IP address**, **not** your local ISP's address.
+
+---
+
+## 🌐 Check Your Location
+
+Visit one of the following websites:
+
+- https://ipinfo.io
+- https://whatismyipaddress.com
+- https://ipleak.net
+
+Verify:
+
+- ✅ Public IP
+- ✅ Country
+- ✅ ASN
+- ✅ ISP
+
+---
+
+## 🛡️ Test for DNS Leaks
+
+Visit
+
+https://dnsleaktest.com
+
+or
+
+https://browserleaks.com/dns
+
+Expected result
+
+- Only your VPN DNS servers should appear.
+- Your ISP DNS servers should **NOT** be visible.
+
+---
+
+## 🌍 Test IPv6
+
+If your VPN server supports IPv6, verify that IPv6 traffic is also routed through the VPN.
+
+Visit
+
+https://test-ipv6.com
+
+Expected
+
+- ✅ IPv6 Reachability
+- ✅ No IPv6 Leak
+
+---
+
+## 🔐 Verify the VPN Tunnel
+
+Check your routing table.
+
+### Linux
+
+```bash
+ip route
+```
+
+IPv6
+
+```bash
+ip -6 route
+```
+
+---
+
+### macOS
+
+```bash
+netstat -rn
+```
+
+---
+
+### Windows
+
+```cmd
+route print
+```
+
+The default route should point to the VPN tunnel when full-tunnel mode is enabled.
+
+---
+
+## 📊 Verify DNS Resolution
+
+Linux / macOS
+
+```bash
+dig openvpn.net
+```
+
+or
+
+```bash
+nslookup openvpn.net
+```
+
+Windows
+
+```cmd
+nslookup openvpn.net
+```
+
+DNS queries should succeed using the DNS server provided by your VPN configuration.
+
+---
+
+## 🔍 Verify VPN Interface
+
+### Linux
+
+```bash
+ip addr
+```
+
+Look for
+
+```
+tun0
+```
+
+or
+
+```
+tun1
+```
+
+---
+
+### macOS
+
+```bash
+ifconfig
+```
+
+Look for
+
+```
+utun
+```
+
+---
+
+### Windows
+
+```cmd
+ipconfig
+```
+
+Look for an
+
+```
+OpenVPN TAP Adapter
+```
+
+or
+
+```
+OpenVPN Data Channel Offload Adapter
+```
+
+depending on the installed client.
+
+---
+
+# 🚨 Troubleshooting
+
+## Authentication Failed
+
+Possible causes
+
+- Incorrect username
+- Incorrect password
+- Revoked certificate
+- Expired certificate
+
+Solution
+
+- Verify your credentials.
+- Regenerate a new `.ovpn` profile if necessary.
+- Contact your VPN administrator.
+
+---
+
+## TLS Handshake Failed
+
+Possible causes
+
+- Incorrect system time
+- Firewall blocking VPN traffic
+- Wrong server hostname
+- Invalid certificate
+
+Recommended checks
+
+- Verify the server address.
+- Ensure UDP/TCP ports are reachable.
+- Synchronize your system clock using NTP.
+- Check the VPN client log for TLS or certificate errors. :contentReference[oaicite:0]{index=0}
+
+---
+
+## DNS Leak
+
+Possible causes
+
+- Local DNS still in use
+- Split DNS configuration
+- VPN DNS not pushed correctly
+
+Solution
+
+- Reconnect.
+- Flush the DNS cache.
+- Verify DNS settings.
+- Use the Local Unbound DNS option provided by this installer.
+
+---
+
+## Unable to Import `.ovpn`
+
+Possible causes
+
+- Corrupted profile
+- Unsupported directives
+- Incorrect file encoding
+
+Solution
+
+- Generate a new profile.
+- Download the file again.
+- Update your VPN client to the latest version.
+
+---
+
+## Connection Drops Frequently
+
+Possible causes
+
+- Unstable Internet connection
+- Firewall interruption
+- Idle timeout
+- Network changes (Wi-Fi ↔ Ethernet)
+
+Recommended actions
+
+- Use the latest OpenVPN Connect version.
+- Enable automatic reconnect.
+- Review the client log for timeout or authentication errors. :contentReference[oaicite:1]{index=1}
+
+---
+
+# 🔐 Security Best Practices
+
+- 🔑 Generate a unique `.ovpn` profile for every user and every device.
+- 🚫 Never share `.ovpn` files publicly.
+- 🔒 Store VPN profiles in a secure location.
+- 🗑️ Revoke compromised certificates immediately.
+- 🔄 Rotate client certificates periodically.
+- 🔐 Use strong passwords for accounts requiring username/password authentication.
+- 📅 Keep the client operating system updated.
+- ⬆️ Keep your OpenVPN client updated.
+- 🌐 Enable automatic NTP synchronization.
+- 🛡️ Use the **Local Unbound DNS** option for maximum privacy whenever possible.
+- 🔥 Allow only the required VPN ports through your firewall.
+- 👤 Grant VPN access only to trusted users.
+
+---
+
+# 📚 Additional Resources
+
+## 📖 Official OpenVPN Documentation
+
+https://openvpn.net/community-resources/
+
+---
+
+## 📘 OpenVPN Connect User Guide
+
+https://openvpn.net/connect-docs/
+
+---
+
+## 💬 OpenVPN Community
+
+https://forums.openvpn.net/
+
+---
+
+## 🐞 Report Issues
+
+If you encounter a bug or have a feature request, please open an issue on GitHub.
+
+https://github.com/alsyundawy/OpenVPN-Install/issues
+
+---
+
+## ⭐ Support the Project
+
+If this project has helped you, please consider:
+
+- ⭐ Starring the repository
+- 🍴 Forking the project
+- 🐞 Reporting bugs
+- 💡 Suggesting new features
+- ❤️ Sponsoring development
+
+Your support helps improve this project for the entire OpenVPN community.
+
+---
+
+> [!TIP]
+>
+> Always download VPN client software from the official vendor, keep your `.ovpn` profile private, and periodically verify your public IP address, DNS servers, and routing after connecting to ensure all traffic is passing through the VPN tunnel as expected. OpenVPN Connect uses imported connection profiles (`.ovpn`) to establish VPN connections, and keeping the client up to date helps ensure compatibility and security. :contentReference[oaicite:2]{index=2}
+
 
 ## Key Features
 

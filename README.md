@@ -1,12 +1,13 @@
 
-<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/dc2c32d0-9493-4e1a-8865-01e501a41bb4" />
-
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/dc2c32d0-9493-4e1a-8865-01e501a41bb4"
+       alt="OpenVPN Road Warrior Installer"
+       width="900">
+</p>
 
 # OpenVPN Road Warrior Installer
 
-> ⚡ **An automated, production-ready OpenVPN server setup script supporting
-> dual-stack IPv4/IPv6, hardened security defaults, and integrated local Unbound
-> recursive DNS resolver.**
+> ⚡ **A production-ready OpenVPN deployment script featuring automated installation, dual-stack IPv4/IPv6 support, hardened security defaults, and an integrated Unbound recursive DNS resolver.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Shell](https://img.shields.io/badge/shell-bash-89e051.svg)](https://www.gnu.org/software/bash/)
@@ -26,11 +27,11 @@
 [![GitHub Forks](https://img.shields.io/github/forks/alsyundawy/OpenVPN-Install?style=social)](https://github.com/alsyundawy/OpenVPN-Install/network/members)
 [![GitHub Contributors](https://img.shields.io/github/contributors/alsyundawy/OpenVPN-Install?style=social)](https://github.com/alsyundawy/OpenVPN-Install/graphs/contributors)
 
+---
 
-🚀 This script lets you set up your own secure OpenVPN server in under a minute,
-even if you have never configured a VPN before. It is designed to be minimal,
-non-invasive, and highly secure—handling system-level tasks from PKI
-generation to firewall rules automatically.
+🚀 **OpenVPN Road Warrior Installer** enables you to deploy a secure, production-ready OpenVPN server in under a minute—even with no prior VPN administration experience.
+
+Designed to be **minimal**, **non-intrusive**, and **security-focused**, the script automates the entire deployment process, including PKI generation, firewall configuration, routing, DNS integration, and client provisioning, allowing you to bring a fully functional VPN server online with minimal effort.
 
 ---
 

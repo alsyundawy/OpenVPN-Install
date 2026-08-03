@@ -135,6 +135,218 @@ directly to the script directory.
 
 ---
 
+# 📱 OpenVPN Client Applications
+
+After the installation completes, the installer automatically generates a client configuration profile (`.ovpn`).
+
+Simply download one of the recommended OpenVPN clients below, import the generated profile, and connect securely to your VPN server.
+
+> [!TIP]
+> 💡 The generated `.ovpn` profile is fully compatible with **OpenVPN Connect**, **OpenVPN GUI**, **Tunnelblick**, **OpenVPN 3 Linux**, **NetworkManager OpenVPN**, **KDE Plasma**, and **Viscosity**.
+
+---
+
+## 🪟 Windows
+
+### ⭐ Official Client (Recommended)
+
+Download:
+
+https://openvpn.net/client/
+
+Supported versions:
+
+- Windows 11
+- Windows 10
+- Windows Server
+
+### 🔄 Alternative Client
+
+OpenVPN GUI (Open Source)
+
+https://github.com/OpenVPN/openvpn-gui
+
+### 📥 Import `.ovpn`
+
+1. Install OpenVPN Connect or OpenVPN GUI.
+2. Launch the application.
+3. Click **Import Profile**.
+4. Select the generated `.ovpn` file.
+5. Enter your VPN credentials if required.
+6. Click **Connect**.
+
+---
+
+## 🍎 macOS
+
+### ⭐ Official Client (Recommended)
+
+OpenVPN Connect
+
+https://openvpn.net/client/
+
+### 🆓 Free & Open Source
+
+Tunnelblick
+
+https://tunnelblick.net/
+
+### 💼 Commercial
+
+Viscosity
+
+https://www.sparklabs.com/viscosity/
+
+### 📥 Import using OpenVPN Connect
+
+1. Install OpenVPN Connect.
+2. Open the application.
+3. Click **Upload File**.
+4. Select your `.ovpn` profile.
+5. Approve the Network Extension if requested.
+6. Click **Connect**.
+
+### 📥 Import using Tunnelblick
+
+1. Install Tunnelblick.
+2. Double-click the `.ovpn` file.
+3. Choose **Install for Me**.
+4. Click **Connect**.
+
+### 📥 Import using Viscosity
+
+1. Open Viscosity.
+2. Go to **Preferences → Connections**.
+3. Click **+ → Import Connection → From File**.
+4. Select the `.ovpn` profile.
+5. Save.
+6. Connect.
+
+---
+
+## 🐧 Linux
+
+### ⭐ Official Client
+
+OpenVPN 3 Linux
+
+https://openvpn.net/client/
+
+### 🖥️ Recommended GUI Clients
+
+Most Linux desktop environments support importing `.ovpn` files directly through NetworkManager.
+
+Supported desktops:
+
+- GNOME
+- KDE Plasma
+- Cinnamon
+- MATE
+- XFCE
+- Budgie
+- Unity
+
+---
+
+### 🟢 GNOME
+
+Install:
+
+```bash
+sudo apt install network-manager-openvpn network-manager-openvpn-gnome
+```
+
+Import:
+
+Settings
+
+→ Network
+
+→ VPN
+
+→ +
+
+→ Import from File
+
+→ Select your `.ovpn`
+
+---
+
+### 🔵 KDE Plasma
+
+Install:
+
+```bash
+sudo apt install plasma-nm network-manager-openvpn
+```
+
+Import:
+
+System Settings
+
+→ Connections
+
+→ Add VPN
+
+→ Import VPN Connection
+
+→ Select `.ovpn`
+
+---
+
+### ⚙️ Command Line
+
+Install OpenVPN:
+
+```bash
+sudo apt install openvpn
+```
+
+Connect:
+
+```bash
+sudo openvpn --config client.ovpn
+```
+
+---
+
+### 💼 Commercial
+
+Viscosity
+
+https://www.sparklabs.com/viscosity/
+
+---
+
+## ✅ Verify VPN Connection
+
+After connecting successfully, verify that your traffic is routed through the VPN.
+
+IPv4
+
+```bash
+curl ifconfig.me
+```
+
+or
+
+```bash
+curl https://icanhazip.com
+```
+
+The returned IP address should match your VPN server instead of your local Internet connection.
+
+---
+
+## 🔐 Security Tips
+
+- ✅ Keep your `.ovpn` profile private.
+- ✅ Never upload client certificates or private keys publicly.
+- ✅ Revoke compromised certificates immediately.
+- ✅ Generate a unique client profile for each device.
+- ✅ Use UDP whenever possible for better performance.
+- ✅ Use the Local Unbound DNS option for maximum privacy when available.
+
 ## Key Features
 
 - ⚡ **Official Repository Integration**: Configures official OpenVPN repositories

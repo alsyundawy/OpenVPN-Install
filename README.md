@@ -6,7 +6,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Shell](https://img.shields.io/badge/shell-bash-89e051.svg)](https://www.gnu.org/software/bash/)
-[![Release](https://img.shields.io/badge/release-v2.0.2-brightgreen.svg)](https://github.com/alsyundawy/Nyr-openvpn-install/releases)
+[![Release](https://img.shields.io/badge/release-v2.0.3-brightgreen.svg)](https://github.com/alsyundawy/OpenVPN-Install/releases)
 [![Platform](https://img.shields.io/badge/platform-Linux-lightgrey.svg)](https://www.kernel.org)
 
 🚀 This script lets you set up your own secure OpenVPN server in under a minute,
@@ -55,6 +55,7 @@ generation to firewall rules automatically.
 - 🌐 An active network interface with a global IPv4/IPv6 address
 - 🔌 **TUN device** enabled on the host (`/dev/net/tun`)
 - ⚡ A systemd-based Linux distribution
+- 🐚 **Bash ≥ 4.0**
 
 ---
 
@@ -66,7 +67,7 @@ Choose one of the installation options below to begin the interactive setup:
 
 This version is maintained by **alsyundawy** and includes all the features
 listed in this repository (e.g., dual-stack IPv4/IPv6, extended DNS options,
-security hardening).
+security hardening, colorized output, and enhanced client management).
 
 *Using `wget`:*
 
@@ -133,6 +134,13 @@ directly to the script directory.
   insertion/removal to prevent duplicates and routing table pollution.
 - 🏷️ **SELinux-Aware**: Automatically checks SELinux enforcing states and updates
   context policy labels for custom ports using `semanage`.
+- 🎨 **Colorized Output**: Bright ANSI-colored terminal output with an enhanced
+  interactive menu interface for improved readability.
+- 🔧 **Advanced Client Management**: Add, renew, revoke, list certificates, and
+  view connected clients — all from a single management menu.
+- 🛡️ **Hardened Input Validation**: Port range enforced (1–65535), octal-safe
+  IPv4 arithmetic, robust IPv6 validation, and `SIGINT`/`SIGTERM` trap for
+  clean exit handling.
 
 ---
 
@@ -157,6 +165,52 @@ and custom inputs:
 4. ⚙️ **Custom Input**:
    - Accepts multiple comma/space-separated IPv4 and IPv6 addresses.
 
+⚡ The script presents 37 DNS choices during setup:
+
+| # | Provider | Primary | Notes |
+| --- | ---------- | --------- | ------- |
+| 1 | Local Unbound | `172.16.200.1` | DNSSEC + DNS rebind protection |
+| 2 | Current system resolvers | — | Parsed from `/etc/resolv.conf` |
+| 3 | Google | `8.8.8.8` | IPv4 + IPv6 |
+| 4 | Cloudflare Standard | `1.1.1.1` | IPv4 + IPv6 |
+| 5 | Cloudflare Security | `1.1.1.2` | Malware filtering |
+| 6 | Cloudflare Family | `1.1.1.3` | Adult content filtering |
+| 7 | Quad9 Secure | `9.9.9.9` | Threat blocking |
+| 8 | Quad9 Unsecured | `9.9.9.10` | No filtering |
+| 9 | Quad9 ECS | `9.9.9.11` | ECS-enabled |
+| 10 | OpenDNS Home | `208.67.222.222` | IPv4 + IPv6 |
+| 11 | OpenDNS FamilyShield | `208.67.222.123` | Family filter |
+| 12 | AdGuard Default | `94.140.14.14` | Ad blocking + IPv6 |
+| 13 | AdGuard Family | `94.140.14.15` | Family filter |
+| 14 | AdGuard Non-Filtering | `94.140.14.140` | No filtering |
+| 15 | AliDNS | `223.5.5.5` | IPv4 + IPv6 |
+| 16 | DNSPod | `119.29.29.29` | — |
+| 17 | 114DNS | `114.114.114.114` | — |
+| 18 | Baidu DNS | `180.76.76.76` | — |
+| 19 | OneDNS | `117.50.10.10` | — |
+| 20 | DNSPai | `101.226.4.6` | — |
+| 21 | CleanBrowsing Security | `185.228.168.9` | IPv4 + IPv6 |
+| 22 | CleanBrowsing Adult | `185.228.168.10` | IPv4 + IPv6 |
+| 23 | CleanBrowsing Family | `185.228.168.168` | IPv4 + IPv6 |
+| 24 | Verisign | `64.6.64.6` | — |
+| 25 | DNS.WATCH | `84.200.69.80` | IPv4 + IPv6 |
+| 26 | Yandex Basic | `77.88.8.8` | IPv4 + IPv6 |
+| 27 | Yandex Safe | `77.88.8.88` | Malware filtering |
+| 28 | Yandex Family | `77.88.8.7` | Family filter |
+| 29 | Level3 / Lumen | `209.244.0.3` | — |
+| 30 | Neustar Default | `156.154.70.1` | IPv4 + IPv6 |
+| 31 | Neustar Threat Protection | `156.154.70.5` | IPv4 + IPv6 |
+| 32 | Neustar Family Secure | `156.154.70.3` | — |
+| 33 | Oracle Dyn | `216.146.35.35` | — |
+| 34 | Alternate DNS | `198.101.242.72` | — |
+| 35 | Comodo Secure DNS | `8.26.56.26` | — |
+| 36 | Freenom World DNS | `80.80.80.80` | — |
+| 37 | Custom resolvers | User-defined | IPv4 and/or IPv6 |
+
+> [!TIP]
+> Option **1 (Local Unbound)** is recommended for maximum privacy — it resolves
+> DNS recursively on the server itself with DNSSEC validation and 0x20 encoding
+> anti-spoofing.
 ---
 
 ## Post-Installation Management
@@ -172,16 +226,22 @@ OpenVPN is already installed.
 
 Select an option:
    1) Add a new client
-   2) Revoke an existing client
-   3) Remove OpenVPN
-   4) Exit
+   2) Renew client configuration
+   3) Revoke an existing client
+   4) List client certificates
+   5) List connected clients
+   6) Remove OpenVPN
+   7) Exit
 ```
 
 | 📋 Menu Option | 🛠️ Action Description |
 | :--- | :--- |
 | **Add a new client** | Configures and signs a new client key pair and generates the `.ovpn` profile. |
-| **Revoke an existing client** | Revokes the client's certificate immediately and updates the CRL file. |
-| **Remove OpenVPN** | Gracefully cleans up all server files, helper services, and restore firewall states. |
+| **Renew client configuration** | Regenerates the `.ovpn` file for an existing client without changing the certificate. |
+| **Revoke an existing client** | Revokes the client's certificate immediately, updates the CRL, and removes the `.ovpn` file. |
+| **List client certificates** | Displays all active (non-revoked) client certificate names. |
+| **List connected clients** | Reads the OpenVPN status log or falls back to `ss` to show active VPN sessions. |
+| **Remove OpenVPN** | Gracefully cleans up all server files, helper services, and restores firewall states. |
 
 ---
 
@@ -197,10 +257,45 @@ Select an option:
 - 🔑 **CRL Permissions**: The Certificate Revocation List (`crl.pem`) is owned and
   accessible specifically to the unprivileged OpenVPN daemon so dynamic
   revocation checks function without root.
+- 🔥 **Firewall SNAT Hardening**: Firewalld direct SNAT rules now include the
+  `! -d` destination guard to prevent masquerading VPN-to-VPN traffic, with
+  correct regex matching for rule idempotency.
+- 🔌 **Port Validation**: Port input is strictly validated within the full range
+  of 1–65535 to prevent misconfiguration.
+- 🚦 **Signal Trapping**: `SIGINT` and `SIGTERM` are trapped for clean installer
+  exit — no orphaned processes or partial configurations.
 
 ---
 
 ## Changelog
+
+### 🆕 [v2.0.3] - 2026-08-03
+
+- **FIX**: Correct firewalld direct rule removal regex — includes `! -d` guard
+  for SNAT rules to properly match rules containing destination negation.
+- **FIX**: Remove client `.ovpn` file upon certificate revocation.
+- **SEC**: Use atomic temporary files and explicit `chmod 600` for client
+  `.ovpn` bundle generation.
+- **SEC**: Exclude local loopback addresses (`127.0.0.1`, `::1`) when
+  parsing system resolvers.
+- **OPT**: Centralize top-level menu logger definition and enhance terminal
+  color trap cleanup.
+- **FIX**: Harden IPv6 validation helper against invalid boundary colons.
+- **FIX**: Improve EasyRSA URL parsing — strip carriage return (`\r`) characters
+  from redirect headers for reliable version tag extraction.
+- **FIX**: Port validation now strictly enforces the full range 1–65535.
+- **FIX**: Improve `resolv.conf` fallback logic in `push_dns` for edge-case
+  system resolver configurations.
+- **FIX**: Dynamic subnet parsing during uninstallation.
+- **ADD**: Colorized terminal output — bright ANSI colors (`\033[1;9x`) with
+  dedicated log helpers: `log_header`, `log_subheader`, `log_prompt`,
+  `log_info`, `log_ok`, `log_warn`, `log_error`.
+- **ADD**: `SIGINT`/`SIGTERM` trap for clean exit handling during installation.
+- **ADD**: `list_clients` — displays all active client certificates from PKI index.
+- **ADD**: `list_connected` — shows active VPN sessions via status log or `ss`.
+- **ADD**: `renew_client` — regenerates `.ovpn` bundle without modifying the
+  certificate or key.
+- **DOC**: Updated DOCNOTE and inline CHANGELOG with elegant formatting.
 
 ### 🚀 [v2.0.2] - 2026-07-25
 
@@ -300,6 +395,20 @@ maintenance of the installer:
 - [![Donate via PayPal](https://img.shields.io/badge/Donate-PayPal-00457C?style=flat-square&logo=paypal&logoColor=white)](https://www.paypal.me/alsyundawy)
 - [![Donate via Ko-fi](https://img.shields.io/badge/Donate-Ko--fi-FF5E5B?style=flat-square&logo=ko-fi&logoColor=white)](https://ko-fi.com/alsyundawy)
 
+<details>
+<summary><b>🇮🇩 Scan QRIS (GoPay, OVO, Dana, LinkAja, Mobile Banking)</b></summary>
+<br>
+
+<p align="left">
+  <img
+    src="https://github.com/user-attachments/assets/a0126f28-6dde-43da-ba14-d7c9a27de0df"
+    alt="QRIS Donation"
+    width="175"
+  />
+</p>
+
+</details>
+
 ---
 
 ## License
@@ -308,6 +417,5 @@ maintenance of the installer:
 
 - Copyright (c) 2013-2026 [Nyr](https://github.com/Nyr)
 - Copyright (c) 2026 [alsyundawy](https://github.com/alsyundawy)
-
 
 ![Alt](https://repobeats.axiom.co/api/embed/5414bb8ff8713664dc83ec9dd23236d62731707b.svg "Repobeats analytics image")

@@ -1,4 +1,3 @@
-
 <p align="center">
   <img src="https://github.com/user-attachments/assets/dc2c32d0-9493-4e1a-8865-01e501a41bb4"
        alt="OpenVPN Road Warrior Installer"
@@ -141,7 +140,7 @@ Once the installation completes, the installer automatically generates a client 
 
 The generated `.ovpn` file contains everything required to establish a secure VPN connection, including the server configuration, certificates, cryptographic parameters, and client settings.
 
-Simply download one of the recommended OpenVPN clients below, import the generated `.ovpn` profile, and connect securely to your VPN server. Importing a profile from a file is the standard workflow supported by OpenVPN Connect. :contentReference[oaicite:0]{index=0}
+Simply download one of the recommended OpenVPN clients below, import the generated `.ovpn` profile, and connect securely to your VPN server.
 
 > [!TIP]
 >
@@ -220,7 +219,7 @@ Features
 9. ✅ Click **Connect**.
 
 > [!TIP]
-> You can also drag and drop the `.ovpn` file directly into OpenVPN Connect on Windows. :contentReference[oaicite:1]{index=1}
+> You can also drag and drop the `.ovpn` file directly into OpenVPN Connect on Windows.
 
 ---
 
@@ -247,7 +246,7 @@ or
 C:\Program Files\OpenVPN\config\
 ```
 
-The profile will automatically appear inside OpenVPN GUI after restarting or rescanning the configuration directory. :contentReference[oaicite:2]{index=2}
+The profile will automatically appear inside OpenVPN GUI after restarting or rescanning the configuration directory.
 
 ---
 
@@ -335,34 +334,10 @@ Features
 ## 📥 Import `.ovpn` using Viscosity
 
 1. Open Viscosity.
-2. Navigate to:
-
-```
-Preferences
-```
-
-3. Select
-
-```
-Connections
-```
-
-4. Click
-
-```
-+
-```
-
-5. Choose
-
-```
-Import Connection
-
-↓
-
-From File...
-```
-
+2. Navigate to `Preferences`.
+3. Select `Connections`.
+4. Click `+`.
+5. Choose `Import Connection → From File...`.
 6. Select the `.ovpn` profile.
 7. Save.
 8. Connect.
@@ -404,37 +379,7 @@ sudo apt update
 sudo apt install network-manager-openvpn network-manager-openvpn-gnome
 ```
 
-Import
-
-```
-Settings
-
-↓
-
-Network
-
-↓
-
-VPN
-
-↓
-
-+
-
-↓
-
-Import from File
-
-↓
-
-Select your .ovpn profile
-```
-
-Click
-
-```
-Connect
-```
+Import: `Settings → Network → VPN → + → Import from File → Select your .ovpn profile → Connect`
 
 ---
 
@@ -447,31 +392,7 @@ sudo apt update
 sudo apt install plasma-nm network-manager-openvpn
 ```
 
-Import
-
-```
-System Settings
-
-↓
-
-Network
-
-↓
-
-Connections
-
-↓
-
-Add VPN
-
-↓
-
-Import VPN Connection
-
-↓
-
-Select .ovpn
-```
+Import: `System Settings → Network → Connections → Add VPN → Import VPN Connection → Select .ovpn`
 
 ---
 
@@ -493,7 +414,7 @@ Connect
 nmcli connection up client
 ```
 
-The imported profile is stored as a NetworkManager connection, allowing you to manage it from your desktop environment. :contentReference[oaicite:3]{index=3}
+The imported profile is stored as a NetworkManager connection, allowing you to manage it from your desktop environment.
 
 ---
 
@@ -526,13 +447,7 @@ Connect
 sudo openvpn --config client.ovpn
 ```
 
-Disconnect
-
-Press
-
-```
-CTRL + C
-```
+Disconnect: press `CTRL + C`
 
 ---
 
@@ -548,7 +463,7 @@ Supports Linux and provides an easy graphical interface for importing `.ovpn` fi
 
 # 🌐 Connect to OpenVPN Using `.ovpn` on MikroTik RouterOS
 
-Starting with **RouterOS v7.12**, MikroTik supports importing an OpenVPN client configuration directly from a standard `.ovpn` file. This greatly simplifies deployment by automatically importing supported VPN parameters, certificates, and authentication settings. For the best compatibility and latest OpenVPN improvements, use the latest stable RouterOS v7 release. :contentReference[oaicite:0]{index=0}
+Starting with **RouterOS v7.12**, MikroTik supports importing an OpenVPN client configuration directly from a standard `.ovpn` file. This greatly simplifies deployment by automatically importing supported VPN parameters, certificates, and authentication settings. For the best compatibility and latest OpenVPN improvements, use the latest stable RouterOS v7 release.
 
 > [!IMPORTANT]
 >
@@ -573,7 +488,7 @@ Before importing your VPN profile, make sure you have:
 > [!TIP]
 >
 > TLS certificate validation depends on the router's system clock.
-> Always enable NTP before connecting to an OpenVPN server. :contentReference[oaicite:1]{index=1}
+> Always enable NTP before connecting to an OpenVPN server.
 
 ---
 
@@ -581,98 +496,23 @@ Before importing your VPN profile, make sure you have:
 
 ## Step 1 — Upload the Profile
 
-Open
-
-```
-Files
-```
-
-Drag and drop your generated
-
-```
-client.ovpn
-```
-
-into the router.
-
----
+Open `Files` and drag and drop your generated `client.ovpn` into the router.
 
 ## Step 2 — Import the Profile
 
-Open
+Open `PPP → OVPN → Import`, choose `client.ovpn`, enter Username and Password, then click `Import`.
 
-```
-PPP
-```
-
-Select
-
-```
-OVPN
-```
-
-Click
-
-```
-Import
-```
-
-Choose
-
-```
-client.ovpn
-```
-
-Enter
-
-- Username
-- Password
-
-Click
-
-```
-Import
-```
-
-RouterOS will automatically import supported configuration from the profile, including certificates, remote server settings, ciphers, authentication parameters, and TLS authentication when present. Supported parameters depend on the RouterOS version. :contentReference[oaicite:2]{index=2}
-
----
+RouterOS will automatically import supported configuration from the profile, including certificates, remote server settings, ciphers, authentication parameters, and TLS authentication when present. Supported parameters depend on the RouterOS version.
 
 ## Step 3 — Verify Import
 
-Navigate to
-
-```
-Interfaces
-
-↓
-
-OVPN Client
-```
-
-A new interface should appear.
-
-Example
-
-```
-ovpn-client
-```
-
-Enable it if necessary.
+Navigate to `Interfaces → OVPN Client`. A new interface (e.g. `ovpn-client`) should appear. Enable it if necessary.
 
 ---
 
 # 💻 Method 2 — Import Using CLI
 
-Upload
-
-```
-client.ovpn
-```
-
-to the router.
-
-Import it using:
+Upload `client.ovpn` to the router, then import it:
 
 ```rsc
 /interface/ovpn-client/import-ovpn-configuration \
@@ -692,8 +532,6 @@ ovpn-password=mypassword \
 key-passphrase=myPrivateKeyPassword
 ```
 
-This is the import method documented by MikroTik for RouterOS v7. :contentReference[oaicite:3]{index=3}
-
 ---
 
 # ▶ Enable the VPN
@@ -710,33 +548,22 @@ Enable
 /interface/ovpn-client/enable 0
 ```
 
-Replace
-
-```
-0
-```
-
-with your interface number if different.
+Replace `0` with your interface number if different.
 
 ---
 
 # 🔍 Monitor Connection Status
 
-Monitor the VPN
-
 ```rsc
 /interface/ovpn-client/monitor 0
 ```
 
-Example
+Example output
 
 ```
 status: connected
-
 uptime: 00:25:42
-
 local-address: 172.16.200.2
-
 remote-address: 172.16.200.1
 ```
 
@@ -746,13 +573,7 @@ Show details
 /interface/ovpn-client/print detail
 ```
 
-A connected interface displays the
-
-```
-R
-```
-
-flag.
+A connected interface displays the `R` flag.
 
 ---
 
@@ -777,8 +598,6 @@ Verify routing
 ```rsc
 /ip/route/print
 ```
-
-These options are officially supported RouterOS client properties. :contentReference[oaicite:4]{index=4}
 
 ---
 
@@ -833,13 +652,13 @@ Current notable limitations include:
 - ✅ UDP and TCP are supported in modern RouterOS v7 releases.
 - ✅ TLS authentication can be imported from supported `.ovpn` profiles.
 
-For the latest supported directives and client capabilities, consult the official MikroTik OpenVPN documentation. :contentReference[oaicite:5]{index=5}
+For the latest supported directives and client capabilities, consult the official MikroTik OpenVPN documentation.
 
 ---
 
 > [!NOTE]
 >
-> This installer generates standard OpenVPN client profiles designed to work with current RouterOS v7 `.ovpn` import functionality. If your VPN profile uses unsupported directives, RouterOS may ignore them or require manual adjustment according to the official MikroTik documentation. :contentReference[oaicite:6]{index=6}
+> This installer generates standard OpenVPN client profiles designed to work with current RouterOS v7 `.ovpn` import functionality. If your VPN profile uses unsupported directives, RouterOS may ignore them or require manual adjustment according to the official MikroTik documentation.
 
 ---
 
@@ -904,13 +723,7 @@ Verify:
 
 ## 🛡️ Test for DNS Leaks
 
-Visit
-
-https://dnsleaktest.com
-
-or
-
-https://browserleaks.com/dns
+Visit https://dnsleaktest.com or https://browserleaks.com/dns
 
 Expected result
 
@@ -923,9 +736,7 @@ Expected result
 
 If your VPN server supports IPv6, verify that IPv6 traffic is also routed through the VPN.
 
-Visit
-
-https://test-ipv6.com
+Visit https://test-ipv6.com
 
 Expected
 
@@ -1002,17 +813,7 @@ DNS queries should succeed using the DNS server provided by your VPN configurati
 ip addr
 ```
 
-Look for
-
-```
-tun0
-```
-
-or
-
-```
-tun1
-```
+Look for `tun0` or `tun1`
 
 ---
 
@@ -1022,11 +823,7 @@ tun1
 ifconfig
 ```
 
-Look for
-
-```
-utun
-```
+Look for `utun`
 
 ---
 
@@ -1036,19 +833,7 @@ utun
 ipconfig
 ```
 
-Look for an
-
-```
-OpenVPN TAP Adapter
-```
-
-or
-
-```
-OpenVPN Data Channel Offload Adapter
-```
-
-depending on the installed client.
+Look for an `OpenVPN TAP Adapter` or `OpenVPN Data Channel Offload Adapter` depending on the installed client.
 
 ---
 
@@ -1085,7 +870,7 @@ Recommended checks
 - Verify the server address.
 - Ensure UDP/TCP ports are reachable.
 - Synchronize your system clock using NTP.
-- Check the VPN client log for TLS or certificate errors. :contentReference[oaicite:0]{index=0}
+- Check the VPN client log for TLS or certificate errors.
 
 ---
 
@@ -1135,7 +920,7 @@ Recommended actions
 
 - Use the latest OpenVPN Connect version.
 - Enable automatic reconnect.
-- Review the client log for timeout or authentication errors. :contentReference[oaicite:1]{index=1}
+- Review the client log for timeout or authentication errors.
 
 ---
 
@@ -1200,7 +985,7 @@ Your support helps improve this project for the entire OpenVPN community.
 
 > [!TIP]
 >
-> Always download VPN client software from the official vendor, keep your `.ovpn` profile private, and periodically verify your public IP address, DNS servers, and routing after connecting to ensure all traffic is passing through the VPN tunnel as expected. OpenVPN Connect uses imported connection profiles (`.ovpn`) to establish VPN connections, and keeping the client up to date helps ensure compatibility and security. :contentReference[oaicite:2]{index=2}
+> Always download VPN client software from the official vendor, keep your `.ovpn` profile private, and periodically verify your public IP address, DNS servers, and routing after connecting to ensure all traffic is passing through the VPN tunnel as expected.
 
 
 ## Key Features
@@ -1229,6 +1014,11 @@ Your support helps improve this project for the entire OpenVPN community.
 - 🛡️ **Hardened Input Validation**: Port range enforced (1–65535), octal-safe
   IPv4 arithmetic, robust IPv6 validation, and `EXIT`/`INT`/`TERM` signal trap
   for clean exit handling with automatic temporary file cleanup.
+- 🔄 **Atomic Operations**: Client `.ovpn` generation and CRL updates use atomic
+  temp-file-then-move patterns to guarantee consistency under concurrent access.
+- 🧹 **Clean Uninstall**: Full removal of firewall rules, SELinux labels, Unbound
+  config, systemd services, and all PKI data with `systemctl daemon-reload`
+  post-cleanup.
 
 ---
 
@@ -1299,6 +1089,7 @@ and custom inputs:
 > Option **1 (Local Unbound)** is recommended for maximum privacy — it resolves
 > DNS recursively on the server itself with DNSSEC validation and 0x20 encoding
 > anti-spoofing.
+
 ---
 
 ## Post-Installation Management
@@ -1324,12 +1115,12 @@ Select an option:
 
 | 📋 Menu Option | 🛠️ Action Description |
 | :--- | :--- |
-| **Add a new client** | Configures and signs a new client key pair and generates the `.ovpn` profile. |
-| **Renew client configuration** | Regenerates the `.ovpn` file for an existing client without changing the certificate. |
-| **Revoke an existing client** | Revokes the client's certificate immediately, updates the CRL, and removes the `.ovpn` file. |
-| **List client certificates** | Displays all active (non-revoked) client certificate names. |
+| **Add a new client** | Validates name uniqueness, signs a new key pair, and generates the `.ovpn` profile atomically. |
+| **Renew client configuration** | Regenerates the `.ovpn` file for an existing client without changing the certificate or key. |
+| **Revoke an existing client** | Revokes the certificate with `[y/N]` confirmation, performs atomic CRL replacement, and removes the `.ovpn` file. |
+| **List client certificates** | Displays all active (non-revoked) client certificate names from the PKI index. |
 | **List connected clients** | Reads the OpenVPN status log or falls back to `ss` to show active VPN sessions. |
-| **Remove OpenVPN** | Gracefully cleans up all server files, helper services, and restores firewall states. |
+| **Remove OpenVPN** | Gracefully removes firewall rules (IPv4+IPv6 SNAT), SELinux labels, Unbound config, systemd services, PKI, and calls `daemon-reload`. |
 
 ---
 
@@ -1345,13 +1136,23 @@ Select an option:
 - 🔑 **CRL Permissions**: The Certificate Revocation List (`crl.pem`) is owned and
   accessible specifically to the unprivileged OpenVPN daemon so dynamic
   revocation checks function without root.
-- 🔥 **Firewall SNAT Hardening**: Firewalld direct SNAT rules now include the
+- 🔥 **Firewall SNAT Hardening**: Firewalld direct SNAT rules include the
   `! -d` destination guard to prevent masquerading VPN-to-VPN traffic, with
   correct regex matching for rule idempotency.
 - 🔌 **Port Validation**: Port input is strictly validated within the full range
   of 1–65535 to prevent misconfiguration.
-- 🚦 **Signal Trapping**: `SIGINT` and `SIGTERM` are trapped for clean installer
-  exit — no orphaned processes or partial configurations.
+- 🚦 **Signal Trapping**: `SIGINT`, `SIGTERM`, and `EXIT` are trapped for clean
+  installer exit — no orphaned processes, partial configurations, or broken
+  terminal color states.
+- 🔒 **Atomic `.ovpn` Generation**: Client config files are written to a temp
+  file first (`mktemp` + `chmod 600`) then moved atomically to the final path
+  to prevent partial writes.
+- 🗑️ **Revocation Cleanup**: Revoking a client immediately removes the `.ovpn`
+  file to prevent re-use of revoked credentials.
+- 🔄 **Atomic CRL Replacement**: CRL updates use `cp` + `mv -f` to guarantee
+  the live `crl.pem` is never in an inconsistent state during rotation.
+- 🔵 **Daemon Reload on Uninstall**: `systemctl daemon-reload` is called after
+  removing unit files to flush stale systemd cache entries.
 
 ---
 
@@ -1371,6 +1172,21 @@ Select an option:
   corrupt or partial archive installations.
 - **SEC**: `curl` fallback for EasyRSA download now uses `-fsSL` (follow redirects,
   silent, SSL-verified, show errors) for stricter HTTP safety.
+- **SEC**: Atomic `.ovpn` generation — client config is written to a `mktemp`
+  file with `chmod 600` then moved atomically to prevent partial writes or
+  insecure intermediate states.
+- **SEC**: Atomic CRL replacement — `cp` + `mv -f` pattern ensures `crl.pem` is
+  never inconsistent during rotation, preventing VPN service disruption.
+- **SEC**: Exclude local loopback addresses (`127.0.0.1`, `::1`) when parsing
+  system resolvers.
+- **FIX**: Management menu — Add client now checks for duplicate certificate
+  name and prints a clear error message instead of silently failing.
+- **FIX**: Management menu — Revoke client now requires explicit `[y/N]`
+  confirmation before revoking, preventing accidental revocations.
+- **FIX**: Management menu — Remove OpenVPN now calls `systemctl daemon-reload`
+  after removing unit files to flush stale systemd cache entries.
+- **FIX**: Management menu — `semanage port -d` during uninstall now uses
+  `|| true` to prevent abort when the port label was never set.
 - **FIX**: Replace bare `|| exit 1` on `cd` calls with `|| die` so trap cleanup
   always executes on early directory-change failures.
 - **FIX**: Remove unused `COLOR_WHITE` and `COLOR_DIM` variables (ShellCheck SC2034).
@@ -1379,10 +1195,6 @@ Select an option:
 - **FIX**: Correct firewalld direct rule removal regex — includes `! -d` guard
   for SNAT rules to properly match rules containing destination negation.
 - **FIX**: Remove client `.ovpn` file upon certificate revocation.
-- **SEC**: Use atomic temporary files and explicit `chmod 600` for client
-  `.ovpn` bundle generation.
-- **SEC**: Exclude local loopback addresses (`127.0.0.1`, `::1`) when
-  parsing system resolvers.
 - **OPT**: Centralize top-level menu logger definition and enhance terminal
   color trap cleanup.
 - **FIX**: Harden IPv6 validation helper against invalid boundary colons.
@@ -1401,7 +1213,8 @@ Select an option:
 - **ADD**: `list_connected` — shows active VPN sessions via status log or `ss`.
 - **ADD**: `renew_client` — regenerates `.ovpn` bundle without modifying the
   certificate or key.
-- **DOC**: Updated DOCNOTE and inline CHANGELOG with elegant formatting.
+- **DOC**: Updated DOCNOTE and inline CHANGELOG with complete management menu
+  fix notes.
 - **LINT**: ShellCheck 0 warnings, jscpd 0 duplicates, cspell 0 misspellings.
 
 ### 🚀 [v2.0.2] - 2026-07-25

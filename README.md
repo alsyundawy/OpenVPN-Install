@@ -1,3 +1,7 @@
+
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/dc2c32d0-9493-4e1a-8865-01e501a41bb4" />
+
+
 # OpenVPN Road Warrior Installer
 
 > ⚡ **An automated, production-ready OpenVPN server setup script supporting
@@ -8,6 +12,20 @@
 [![Shell](https://img.shields.io/badge/shell-bash-89e051.svg)](https://www.gnu.org/software/bash/)
 [![Release](https://img.shields.io/badge/release-v2.0.3-brightgreen.svg)](https://github.com/alsyundawy/OpenVPN-Install/releases)
 [![Platform](https://img.shields.io/badge/platform-Linux-lightgrey.svg)](https://www.kernel.org)
+![Ubuntu](https://img.shields.io/badge/Ubuntu-22.04__24.04__26.04-E95420?logo=ubuntu)
+![Debian](https://img.shields.io/badge/Debian-11__12__13-A81D33?logo=debian)
+![Bash](https://img.shields.io/badge/bash-%3E%3D4.0-41bf24.svg?logo=gnu-bash)
+[![Latest Release](https://img.shields.io/github/v/release/alsyundawy/OpenVPN-Install)](https://github.com/alsyundawy/OpenVPN-Install/releases)
+[![Maintenance Status](https://img.shields.io/maintenance/yes/9999)](https://github.com/alsyundawy/OpenVPN-Install/)
+[![License](https://img.shields.io/github/license/alsyundawy/OpenVPN-Install)](https://github.com/alsyundawy/OpenVPN-Install/blob/master/LICENSE)
+[![GitHub Issues](https://img.shields.io/github/issues/alsyundawy/OpenVPN-Install)](https://github.com/alsyundawy/OpenVPN-Install/issues)
+[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/alsyundawy/OpenVPN-Install)](https://github.com/alsyundawy/OpenVPN-Install/pulls)
+[![Donate with PayPal](https://img.shields.io/badge/PayPal-donate-orange)](https://www.paypal.me/alsyundawy)
+[![Donate with Ko-fi](https://img.shields.io/badge/Ko--fi-donate-ff5e5b?logo=ko-fi&logoColor=white)](https://ko-fi.com/alsyundawy)
+[![Sponsor with GitHub](https://img.shields.io/badge/GitHub-sponsor-orange)](https://github.com/sponsors/alsyundawy)
+[![GitHub Forks](https://img.shields.io/github/forks/alsyundawy/OpenVPN-Install?style=social)](https://github.com/alsyundawy/OpenVPN-Install/network/members)
+[![GitHub Contributors](https://img.shields.io/github/contributors/alsyundawy/OpenVPN-Install?style=social)](https://github.com/alsyundawy/OpenVPN-Install/graphs/contributors)
+
 
 🚀 This script lets you set up your own secure OpenVPN server in under a minute,
 even if you have never configured a VPN before. It is designed to be minimal,

@@ -777,6 +777,34 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 		unset ip6_number
 	fi
 
+	# ── IPv6 manual entry (fallback when auto-detection finds none) ───────────
+	# Auto-discovery relies on `ip -o -6 addr show scope global`. On some hosts
+	# (IPv6 not yet on the interface, link-local only, or scoped differently)
+	# this returns nothing and the server silently falls back to IPv4-only.
+	# Offer a manual entry so dual-stack can still be enabled.
+	if [[ -z $ip6 ]]; then
+		echo
+		log_warn "No global IPv6 address found via auto-discovery."
+		log_prompt "Enable IPv6 (dual-stack) manually?"
+		echo "   1) No, IPv4 only"
+		echo "   2) Yes, enter the public IPv6 address"
+		read -r -p "Option [1]: " ipv6_manual
+		until [[ -z $ipv6_manual || $ipv6_manual =~ ^[12]$ ]]; do
+			echo "$ipv6_manual: invalid selection."
+			read -r -p "Option [1]: " ipv6_manual
+		done
+		if [[ ${ipv6_manual:-1} == "2" ]]; then
+			until [[ -n $ip6 ]]; do
+				read -r -p "Public IPv6 address: " ip6
+				if ! is_valid_ipv6 "$ip6"; then
+					log_error "'${ip6}' is not a valid IPv6 address."
+					ip6=""
+				fi
+			done
+		fi
+		unset ipv6_manual
+	fi
+
 	# ── Protocol ─────────────────────────────────────────────────────────────
 	echo
 	log_prompt "Which protocol should OpenVPN use?"

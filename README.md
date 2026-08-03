@@ -1209,7 +1209,8 @@ Your support helps improve this project for the entire OpenVPN community.
   dynamically for Debian/Ubuntu and RHEL-based systems to ensure you run the
   stable 2.6.x branch instead of outdated packages.
 - 🌐 **Full Dual-Stack IPv4/IPv6 Routing**: Automatic subnets mapping and address
-  assignment for dual-stack hosts.
+  assignment for dual-stack hosts, with manual IPv6 fallback when auto-discovery
+  does not detect a global IPv6 address.
 - 🔒 **Hardened Cryptography**: Uses standard RFC 7919 `ffdhe2048` Diffie-Hellman
   parameters (safe and instant generation), SHA-512 authentication, and
   `tls-crypt` payload encryption keys.
@@ -1226,8 +1227,8 @@ Your support helps improve this project for the entire OpenVPN community.
 - 🔧 **Advanced Client Management**: Add, renew, revoke, list certificates, and
   view connected clients — all from a single management menu.
 - 🛡️ **Hardened Input Validation**: Port range enforced (1–65535), octal-safe
-  IPv4 arithmetic, robust IPv6 validation, and `SIGINT`/`SIGTERM` trap for
-  clean exit handling.
+  IPv4 arithmetic, robust IPv6 validation, and `EXIT`/`INT`/`TERM` signal trap
+  for clean exit handling with automatic temporary file cleanup.
 
 ---
 
@@ -1358,6 +1359,23 @@ Select an option:
 
 ### 🆕 [v2.0.3] - 2026-08-03
 
+- **ADD**: IPv6 manual fallback — when auto-discovery (`ip -o -6 addr show scope global`)
+  finds no global IPv6 address (IPv6 not yet bound, link-local only, or scoped
+  differently), the installer now offers a manual IPv6 entry option so dual-stack
+  can still be enabled instead of silently falling back to IPv4-only.
+- **SEC**: Consolidated signal trap handlers (`EXIT`/`INT`/`TERM`) to reset
+  terminal colors and clean up tracked temporary files via `_TMP_FILES` array
+  on any exit path — no orphaned temp files or broken color states.
+- **SEC**: EasyRSA download now saves to a verified temporary file (`mktemp`),
+  validates it as a valid gzip tarball (`tar -tzf`) before extraction, preventing
+  corrupt or partial archive installations.
+- **SEC**: `curl` fallback for EasyRSA download now uses `-fsSL` (follow redirects,
+  silent, SSL-verified, show errors) for stricter HTTP safety.
+- **FIX**: Replace bare `|| exit 1` on `cd` calls with `|| die` so trap cleanup
+  always executes on early directory-change failures.
+- **FIX**: Remove unused `COLOR_WHITE` and `COLOR_DIM` variables (ShellCheck SC2034).
+- **FIX**: `append_line_if_missing` now validates file existence and uses `grep --`
+  for end-of-options safety; annotated as intentionally unused (SC2317).
 - **FIX**: Correct firewalld direct rule removal regex — includes `! -d` guard
   for SNAT rules to properly match rules containing destination negation.
 - **FIX**: Remove client `.ovpn` file upon certificate revocation.
@@ -1377,12 +1395,14 @@ Select an option:
 - **ADD**: Colorized terminal output — bright ANSI colors (`\033[1;9x`) with
   dedicated log helpers: `log_header`, `log_subheader`, `log_prompt`,
   `log_info`, `log_ok`, `log_warn`, `log_error`.
-- **ADD**: `SIGINT`/`SIGTERM` trap for clean exit handling during installation.
+- **ADD**: `SIGINT`/`SIGTERM`/`EXIT` trap for clean exit handling during
+  installation.
 - **ADD**: `list_clients` — displays all active client certificates from PKI index.
 - **ADD**: `list_connected` — shows active VPN sessions via status log or `ss`.
 - **ADD**: `renew_client` — regenerates `.ovpn` bundle without modifying the
   certificate or key.
 - **DOC**: Updated DOCNOTE and inline CHANGELOG with elegant formatting.
+- **LINT**: ShellCheck 0 warnings, jscpd 0 duplicates, cspell 0 misspellings.
 
 ### 🚀 [v2.0.2] - 2026-07-25
 

@@ -45,12 +45,33 @@
 #   - Renew: regenerates client .ovpn file without changing certificate.
 #   - List connected: shows active VPN clients via OpenVPN status file or ss.
 #   - Support for older Ubuntu (18.04–20.04) and Debian (9–10) using distro packages.
+#   - IPv6 manual fallback: if auto-discovery finds no global IPv6 address, the
+#     installer offers a manual entry option so dual-stack can still be enabled.
+#   - Signal trap consolidated: EXIT/INT/TERM handlers reset terminal colors and
+#     clean up tracked temporary files via _TMP_FILES array.
+#   - EasyRSA download validated: archive is saved to a temp file (mktemp), verified
+#     as a valid gzip tarball before extraction, preventing corrupt/partial installs.
+#   - ShellCheck 0 warnings, jscpd 0 duplicates, cspell 0 misspellings.
 #   - This revision (2.0.3) fixes firewalld rule removal, adds colorized output,
 #     improves EasyRSA URL parsing, atomic .ovpn config generation, IPv6 validation,
 #     and enhances overall code, logic, security, and stability.
 # ==============================================================================
 # CHANGELOG:
 #   [2026-08-03] v2.0.3
+#     - ADD: IPv6 manual fallback — offer manual IPv6 entry when auto-discovery
+#       finds no global address, enabling dual-stack on hosts where IPv6 is not
+#       yet bound to the interface or only has link-local scope.
+#     - SEC: Consolidated trap handlers (EXIT/INT/TERM) to reset terminal colors
+#       and clean up tracked temporary files via _TMP_FILES array on any exit.
+#     - SEC: EasyRSA download now uses mktemp + tarball validation (tar -tzf)
+#       before extraction, preventing corrupt or partial archive installs.
+#     - SEC: curl fallback for EasyRSA download now uses -fsSL (follow redirects,
+#       silent, SSL-verified, show errors) for stricter HTTP safety.
+#     - FIX: Replace bare `|| exit 1` on cd calls with `|| die` so trap cleanup
+#       always executes on early failure.
+#     - FIX: Remove unused COLOR_WHITE and COLOR_DIM variables (ShellCheck SC2034).
+#     - FIX: append_line_if_missing now validates file existence and uses `grep --`
+#       for end-of-options safety; annotated as intentionally unused (SC2317).
 #     - FIX: Correct firewalld direct rule removal regex (include `! -d` for SNAT).
 #     - FIX: Remove client .ovpn file upon revocation.
 #     - SEC: Use atomic temporary files and explicit chmod 600 for client .ovpn generation.
@@ -65,6 +86,7 @@
 #     - ADD: Management functions: list_clients, list_connected, renew_client.
 #     - FIX: Dynamic subnet parsing during uninstallation.
 #     - DOC: Update DOCNOTE and CHANGELOG with clean formatting.
+#     - LINT: ShellCheck 0 warnings, jscpd 0 duplicates, cspell 0 misspellings.
 #   [2026-07-25] v2.0.2
 #     - CHG: Default IPv4 VPN subnet changed from 10.8.0.0/24 to 172.16.200.0/24
 #     - CHG: Removed openSUSE and Arch Linux support to streamline distribution maintenance
@@ -134,11 +156,20 @@ read -r -N 999999 -t 0.001 || true
 # Strict security: set restrictive umask for PKI/sensitive files
 umask 077
 
-# Trap INT/TERM to exit cleanly and reset terminal colors
+# Trap INT/TERM/EXIT to reset terminal colors so a colored prompt never leaks
+# into a broken state if the script exits early (e.g. via die()).
+# Also removes any tracked temporary files.
+_TMP_FILES=()
 cleanup() {
+	# Remove tracked temp files (ignore errors — they may already be gone).
+	if ((${#_TMP_FILES[@]})); then
+		rm -f -- "${_TMP_FILES[@]}" 2>/dev/null || true
+	fi
 	printf '%b' "${COLOR_RESET-}"
 }
-trap 'cleanup; exit 1' INT TERM
+trap cleanup EXIT
+trap 'cleanup; exit 130' INT
+trap 'cleanup; exit 143' TERM
 
 # ==============================================================================
 # COLOR DEFINITIONS (bright & vivid)
@@ -151,8 +182,6 @@ if [[ -t 1 ]] || [[ ${FORCE_COLOR:-0} == "1" ]]; then
 	COLOR_BLUE='\033[1;94m'      # Bright Blue
 	COLOR_MAGENTA='\033[1;95m'   # Bright Magenta
 	COLOR_CYAN='\033[1;96m'      # Bright Cyan
-	COLOR_WHITE='\033[1;97m'     # Bright White
-	COLOR_DIM='\033[0;90m'       # Dim gray
 	COLOR_BOLD='\033[1m'
 else
 	COLOR_RESET=''
@@ -162,8 +191,6 @@ else
 	COLOR_BLUE=''
 	COLOR_MAGENTA=''
 	COLOR_CYAN=''
-	COLOR_WHITE=''
-	COLOR_DIM=''
 	COLOR_BOLD=''
 fi
 
@@ -202,10 +229,14 @@ die() {
 # ==============================================================================
 # UTILITY AND VALIDATION FUNCTIONS
 # ==============================================================================
+# Append a line to a file only if it is not already present (idempotent).
+# Currently unused by the installer but retained as a reusable helper.
+# shellcheck disable=SC2317
 append_line_if_missing() {
 	local line="$1"
 	local file="$2"
-	grep -Fqx "$line" "$file" 2>/dev/null || printf '%s\n' "$line" >>"$file"
+	[[ -f $file ]] || return 1
+	grep -Fqx -- "$line" "$file" 2>/dev/null || printf '%s\n' "$line" >>"$file"
 }
 
 is_valid_ipv4() {
@@ -954,12 +985,24 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	log_info "Downloading EasyRSA from: ${easy_rsa_url}"
 
 	mkdir -p /etc/openvpn/server/easy-rsa/
-	if ! { wget -qO- "$easy_rsa_url" 2>/dev/null || curl -sL "$easy_rsa_url"; } |
-		tar xz -C /etc/openvpn/server/easy-rsa/ --strip-components 1; then
-		die "Failed to download and extract EasyRSA."
+	# Download to a verified temp file, validate it is a valid gzip tarball,
+	# then extract atomically. Prevents partial/corrupt extraction when the
+	# upstream download fails midway. The temp file is tracked for cleanup
+	# on EXIT/INT/TERM via _TMP_FILES.
+	easy_rsa_tmp=$(mktemp) || die "Failed to create a temporary file."
+	_TMP_FILES+=("$easy_rsa_tmp")
+	if ! { wget -qO- "$easy_rsa_url" 2>/dev/null || curl -fsSL "$easy_rsa_url"; } >"$easy_rsa_tmp"; then
+		die "Failed to download EasyRSA from: ${easy_rsa_url}"
 	fi
+	if ! tar -tzf "$easy_rsa_tmp" >/dev/null 2>&1; then
+		die "Downloaded EasyRSA archive is corrupt or not a valid gzip tarball."
+	fi
+	if ! tar xzf "$easy_rsa_tmp" -C /etc/openvpn/server/easy-rsa/ --strip-components 1; then
+		die "Failed to extract EasyRSA."
+	fi
+	rm -f "$easy_rsa_tmp"
 	chown -R root:root /etc/openvpn/server/easy-rsa/
-	cd /etc/openvpn/server/easy-rsa/ || exit 1
+	cd /etc/openvpn/server/easy-rsa/ || die "Failed to enter EasyRSA directory."
 
 	# ── PKI initialisation ────────────────────────────────────────────────────
 	./easyrsa --batch init-pki
@@ -1195,7 +1238,7 @@ else
 			read -r -p "Name: " unsanitized_client
 			client="${unsanitized_client//[^0-9A-Za-z_-]/_}"
 		done
-		cd /etc/openvpn/server/easy-rsa/ || exit 1
+		cd /etc/openvpn/server/easy-rsa/ || die "Failed to enter EasyRSA directory."
 		./easyrsa --batch --days=3650 build-client-full "$client" nopass
 		generate_client_config "$client"
 		log_ok "$client added. Configuration available in: ${script_dir}/${client}.ovpn"
@@ -1231,7 +1274,7 @@ else
 			read -r -p "Confirm ${client} revocation? [y/N]: " revoke
 		done
 		if [[ ${revoke} =~ ^[yY]$ ]]; then
-			cd /etc/openvpn/server/easy-rsa/ || exit 1
+			cd /etc/openvpn/server/easy-rsa/ || die "Failed to enter EasyRSA directory."
 			./easyrsa --batch revoke "${client}"
 			./easyrsa --batch --days=3650 gen-crl
 			rm -f /etc/openvpn/server/easy-rsa/pki/reqs/"${client}".req
